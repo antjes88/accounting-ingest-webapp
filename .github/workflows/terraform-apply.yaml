@@ -1,0 +1,19 @@
+name: terraform-apply
+
+permissions:
+  id-token: write
+  contents: write
+  pull-requests: write
+
+on:
+  push:
+    branches:
+      - dummy
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  deployment:
+    uses: ./.github/templates/cf-terraform-apply.yaml

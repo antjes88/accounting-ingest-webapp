@@ -1,0 +1,19 @@
+name: terraform-validate
+
+permissions:
+  id-token: write 
+  contents: write
+  pull-requests: write
+
+on:
+  pull_request:
+    branches:
+      - dummy
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deployment:
+    uses: ./.github/templates/cf-terraform-validate.yaml
