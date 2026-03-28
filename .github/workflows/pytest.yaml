@@ -19,6 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
+        # TODO: check version correctly selected
         python-version: ['3.10']
       max-parallel: 1
     env: 

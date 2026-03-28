@@ -2,7 +2,7 @@ terraform {
   required_version = ">= 1.0"
   backend "gcs" {
     bucket = ""                                                               # Replace with your GCS bucket name
-    prefix = "terraform/state/template-python-devcontainer-cloud-run-service" # Replace with your desired prefix
+    prefix = "terraform/state/accounting-ingest-webapp-cloud-run-service" # Replace with your desired prefix
   }
 
   required_providers {
