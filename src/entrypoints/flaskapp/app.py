@@ -1,14 +1,14 @@
 from flask import Flask, session, request, redirect, url_for
 import os
 from datetime import timedelta
+from dotenv import load_dotenv
 
 from src.entrypoints.flaskapp.blueprints.home import home_page
 from src.entrypoints.flaskapp.blueprints.auth import login_page
 from src.entrypoints.flaskapp.blueprints.accounting import accounting_pages
-from src.utils.env_var_loader import env_var_loader
 
-if os.environ.get("ISDEVCONTAINER"):
-    env_var_loader(".env")
+if os.environ.get("ISDEVCONTAINER") and not os.environ.get("ISTESTING"):
+    load_dotenv(dotenv_path=".env", override=True)  # pragma: no cover
 
 
 class Config:

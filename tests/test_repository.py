@@ -3,7 +3,7 @@ from decimal import Decimal
 
 from src.repository import SqlTable, PostgresRepository
 from src import model
-from tests.utils.sample_models import (
+from tests.helpers.sample_data import (
     cash_account,
     petty_cash_account,
     work_income_account,

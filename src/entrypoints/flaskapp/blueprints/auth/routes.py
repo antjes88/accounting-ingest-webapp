@@ -1,4 +1,5 @@
 from flask import render_template, request, redirect, url_for, session, flash
+from werkzeug.security import check_password_hash  # generate_password_hash
 import os
 
 from . import login_page
@@ -10,8 +11,9 @@ def login():
         username = request.form.get("username")
         password = request.form.get("password")
 
-        # TODO: password should be hashed protected
-        if username == os.environ["USERNAME"] and password == os.environ["PASSWORD"]:
+        if username == os.environ["USERNAME"] and check_password_hash(
+            os.environ["HASHED_PASSWORD"], password
+        ):
             session["permanent"] = True
             session["logged_in"] = True
             session["user"] = username

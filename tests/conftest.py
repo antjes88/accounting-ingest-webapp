@@ -4,6 +4,8 @@ from typing import Generator
 
 from src.utils.postgresql_client import PostgresGCPClient
 from src.repository import PostgresRepository
+from src.entrypoints.flaskapp.app import server
+from tests.helpers.sample_data import web_credentials
 
 
 @pytest.fixture(scope="session")
@@ -56,10 +58,31 @@ def repo_with_data(
 
     postgres_repo.postgres_client.execute(
         """
-        TRUNCATE TABLE 
-            accounting.ledger_entries, 
+        TRUNCATE TABLE
+            accounting.ledger_entries,
             accounting.transactions,
             accounting.accounts
         RESTART IDENTITY CASCADE;
         """
     )
+
+
+@pytest.fixture(scope="function")
+def client():
+    server.config["TESTING"] = True
+    server.config["WTF_CSRF_ENABLED"] = False
+    with server.test_client() as client:
+        yield client
+
+
+@pytest.fixture(scope="function")
+def client_logged_in(client):
+    client.post(
+        "/login",
+        data=web_credentials,
+        follow_redirects=True,
+    )
+
+    yield client
+
+    client.get("/logout", follow_redirects=True)

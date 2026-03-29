@@ -12,13 +12,14 @@ from .forms import NewTransactionForm
 @accounting_pages.route("/new_transaction", methods=["GET", "POST"])
 def new_transaction():
     try:
-        client = PostgresGCPClient(
-            host=os.getenv("HOST"),
-            database_name=os.getenv("DATABASE_NAME"),
-            user_name=os.getenv("USER_NAME"),
-            user_password=os.getenv("USER_PASSWORD"),
+        repo = PostgresRepository(
+            PostgresGCPClient(
+                host=os.getenv("HOST"),
+                database_name=os.getenv("DATABASE_NAME"),
+                user_name=os.getenv("USER_NAME"),
+                user_password=os.getenv("USER_PASSWORD"),
+            )
         )
-        repo = PostgresRepository(client)
         accounts = repo.get_accounts()
 
         form = NewTransactionForm(accounts)
@@ -30,7 +31,7 @@ def new_transaction():
                 debit_account=form.get_debit_account(accounts),
                 credit_account=form.get_credit_account(accounts),
             )
-            # TODO: add check for creation of transaction
+
             flash("Transaction recorded successfully!", "success")
     except Exception as message:
         flash(f"Error recording transaction: {message}", "error")

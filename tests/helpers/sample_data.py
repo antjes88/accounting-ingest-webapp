@@ -1,4 +1,11 @@
+import os
+
 from src import model
+
+web_credentials = {
+    "username": os.environ["USERNAME"],
+    "password": os.environ["PASSWORD"],
+}
 
 cash_account = model.Account(
     id=1,
