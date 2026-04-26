@@ -53,6 +53,7 @@ jobs:
           python -m pip install --upgrade pip
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
           if [ -f .devcontainer/dev-requirements.txt ]; then pip install -r .devcontainer/dev-requirements.txt; fi
+                    if [ -f .devcontainer/webapp-requirements.txt ]; then pip install -r .devcontainer/webapp-requirements.txt; fi
 
       - name: Test with pytest
         run: |
