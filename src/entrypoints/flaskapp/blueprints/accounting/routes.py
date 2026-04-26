@@ -2,11 +2,14 @@ from flask import render_template, request, flash
 import os
 
 from src.utils.postgresql_client import PostgresGCPClient
+from src.utils.logs import default_module_logger
 from src.repository import PostgresRepository
 from src import services
 
 from . import accounting_pages
 from .forms import NewTransactionForm
+
+logger = default_module_logger(__file__)
 
 
 @accounting_pages.route("/new_transaction", methods=["GET", "POST"])
@@ -18,6 +21,7 @@ def new_transaction():
                 database_name=os.getenv("DATABASE_NAME"),
                 user_name=os.getenv("USER_NAME"),
                 user_password=os.getenv("USER_PASSWORD"),
+                port=5432,
             )
         )
         accounts = repo.get_accounts()
@@ -34,6 +38,7 @@ def new_transaction():
 
             flash("Transaction recorded successfully!", "success")
     except Exception as message:
+        logger.error(f"Error when dealing with database: '{message}'")
         flash(f"Error recording transaction: {message}", "error")
 
     return render_template("new_transaction.html", form=form)
