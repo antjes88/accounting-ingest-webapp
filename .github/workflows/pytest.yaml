@@ -25,6 +25,7 @@ jobs:
     env:
       USERNAME: 123
       PASSWORD: 123
+      HASHED_PASSWORD: scrypt:32768:8:1$YPF4Oohz2domkVNA$4a448138235330b29f0b3723c78f817cf77cdd9a505986cfffabdfe817a3d657d8095b8f6b272571fd8138f682f88826a58fed2ccf79ce4208ab80df6800b06b
       SECRET_KEY: 1234assde
       DATABASE_HOST: ${{ secrets.DB_HOST }}
       DATABASE_NAME: ${{ secrets.DB_NAME }}
