@@ -27,7 +27,6 @@ jobs:
       PASSWORD: 123
       HASHED_PASSWORD: scrypt:32768:8:1$YPF4Oohz2domkVNA$4a448138235330b29f0b3723c78f817cf77cdd9a505986cfffabdfe817a3d657d8095b8f6b272571fd8138f682f88826a58fed2ccf79ce4208ab80df6800b06b
       SECRET_KEY: 1234assde
-      DATABASE_HOST: ${{ secrets.DB_HOST }}
       DATABASE_NAME: ${{ secrets.DB_NAME }}
       USER_NAME: ${{ secrets.DB_USER_NAME }}
       USER_PASSWORD: ${{ secrets.DB_USER_PASSWORD }}
@@ -44,6 +43,14 @@ jobs:
           workload_identity_provider: "${{ secrets.WORKLOAD_IDENTITY_PROVIDER }}"
           service_account: "${{ secrets.SERVICE_ACCOUNT_PYTEST_EMAIL }}"
 
+      - name: Cloud SQL Proxy
+        uses: "google-github-actions/setup-cloudsql-connect@v1"
+        with:
+          instance_connection_name: "${{ secrets.INSTANCE_CONNECTION_NAME }}"
+
+      - name: "Run tests"
+        run: |
+
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@8d9ed9ac5c53483de85588cdf95a591a75ab9f55 # v5
         with:
@@ -58,10 +65,14 @@ jobs:
 
       - name: Test with pytest
         run: |
+          # Default proxy exposes DB in 127.0.0.1:5432
+          export HOST=127.0.0.1 
           python -m pytest -vv
 
       - name: Build converage file
         run: |
+          # Default proxy exposes DB in 127.0.0.1:5432
+          export HOST=127.0.0.1 
           python -m pytest --junitxml=pytest.xml --cov-report "xml:coverage.xml" --cov=src tests/
 
       - name: Post comment
@@ -73,4 +84,6 @@ jobs:
 
       - name: Check Pytest coverage threshold >=95%
         run: |
+          # Default proxy exposes DB in 127.0.0.1:5432
+          export HOST=127.0.0.1 
           python -m pytest --cov=src --cov-fail-under=95
