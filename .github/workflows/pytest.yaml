@@ -27,6 +27,7 @@ jobs:
       PASSWORD: 123
       HASHED_PASSWORD: scrypt:32768:8:1$YPF4Oohz2domkVNA$4a448138235330b29f0b3723c78f817cf77cdd9a505986cfffabdfe817a3d657d8095b8f6b272571fd8138f682f88826a58fed2ccf79ce4208ab80df6800b06b
       SECRET_KEY: 1234assde
+      HOST: "127.0.0.1"
       DATABASE_NAME: ${{ secrets.DB_NAME }}
       USER_NAME: ${{ secrets.DB_USER_NAME }}
       USER_PASSWORD: ${{ secrets.DB_USER_PASSWORD }}
@@ -46,7 +47,8 @@ jobs:
       - name: Cloud SQL Proxy
         run: |
           curl -o cloud-sql-proxy https://storage.googleapis.com/cloud-sql-connectors/cloud-sql-proxy/v2.1.1/cloud-sql-proxy.linux.amd64 && chmod +x cloud-sql-proxy
-          ./cloud-sql-proxy "${{ secrets.INSTANCE_CONNECTION_NAME }}"
+          ./cloud-sql-proxy ${{ secrets.INSTANCE_CONNECTION_NAME }} --address ${HOST} --port 5432 &
+          sleep 15
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@8d9ed9ac5c53483de85588cdf95a591a75ab9f55 # v5
@@ -61,16 +63,10 @@ jobs:
           if [ -f .devcontainer/webapp-requirements.txt ]; then pip install -r .devcontainer/webapp-requirements.txt; fi
 
       - name: Test with pytest
-        env:
-          # Default proxy exposes DB in 127.0.0.1:5432
-          HOST: "127.0.0.1"
         run: |
           python -m pytest -vv
 
       - name: Build converage file
-        env:
-          # Default proxy exposes DB in 127.0.0.1:5432
-          HOST: "127.0.0.1"
         run: |
           python -m pytest --junitxml=pytest.xml --cov-report "xml:coverage.xml" --cov=src tests/
 
