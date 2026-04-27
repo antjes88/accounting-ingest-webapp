@@ -47,7 +47,7 @@ jobs:
         uses: mattes/gce-cloudsql-proxy-action@v1
         with:
           creds: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
-          instance_connection_name: "${{ secrets.INSTANCE_CONNECTION_NAME }}"
+          instance: "${{ secrets.INSTANCE_CONNECTION_NAME }}"
           port: 5432
 
       - name: "Run tests"
