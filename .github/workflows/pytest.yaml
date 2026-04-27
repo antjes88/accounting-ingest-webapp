@@ -44,7 +44,7 @@ jobs:
           service_account: "${{ secrets.SERVICE_ACCOUNT_PYTEST_EMAIL }}"
 
       - name: Cloud SQL Proxy
-        uses: mattes/gce-cloudsql-proxy-action@v1
+        uses: mattes/gce-cloudsql-proxy-action@v1.0.1
         with:
           instance: "${{ secrets.INSTANCE_CONNECTION_NAME }}"
           port: 5432
