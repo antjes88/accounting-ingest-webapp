@@ -46,7 +46,6 @@ jobs:
       - name: Cloud SQL Proxy
         uses: mattes/gce-cloudsql-proxy-action@v1
         with:
-          creds: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
           instance: "${{ secrets.INSTANCE_CONNECTION_NAME }}"
           port: 5432
 
