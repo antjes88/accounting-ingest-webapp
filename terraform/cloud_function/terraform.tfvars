@@ -1,5 +1,0 @@
-project_id           = ""
-cloud_function_name  = ""
-service_account_name = ""
-function_entry_point = ""
-region               = ""

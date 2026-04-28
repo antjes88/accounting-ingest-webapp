@@ -33,3 +33,8 @@ variable "service_name" {
   type        = string
   description = "Name of the Cloud Run service"
 }
+
+variable "iap_user_email" {
+  type        = string
+  description = "Email of the user to be granted IAP access"
+}

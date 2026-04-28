@@ -19,7 +19,6 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        # TODO: check version correctly selected
         python-version: [ "3.10" ]
       max-parallel: 1
     env:
@@ -78,8 +77,5 @@ jobs:
           coverage-path-prefix: src/
 
       - name: Check Pytest coverage threshold >=95%
-        env:
-          # Default proxy exposes DB in 127.0.0.1:5432
-          HOST: "127.0.0.1"
         run: |
           python -m pytest --cov=src --cov-fail-under=95

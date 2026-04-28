@@ -2,19 +2,19 @@
 To create the tables at a database, you can execute the scaffolding on file _PostgreSQL/build_scaffolding.psql_.
 
 This scaffolding can be executed with the below command on your CLI:
-```commandline
+```bash
 {path to psql executable} -h {server host} -U {user name} -d {database name} -p {port} -f {path to build_scaffolding.psql} -L {path to file where to write logs}
 ```
 
 You will need to create a file on folder _PostgreSQL/sql_scripts/accounting/permissions_ granting permissions to user.
 These permissions are based on the environment. Scaffolding will identify the environment by the name of the database, 
-so:
-    - database_name like '%dev%' -> dev environment -> file name: dev.sql
-    - database_name like '%test%' -> test environment -> file name: test.sql
-    - database_name like '%prod%' -> prod environment -> file name: prod.sql
+based on:
+   - database_name like '%dev%' -> dev environment -> file name: dev.sql
+   - database_name like '%test%' -> test environment -> file name: test.sql
+   - database_name like '%prod%' -> prod environment -> file name: prod.sql
 
 test.sql file should be as follows:
-```text
+```sql
 DO
 $do$
 BEGIN
