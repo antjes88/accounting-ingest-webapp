@@ -160,6 +160,7 @@ Before the Terraform code can be executed, ensure the following:
       - roles/cloudsql.admin
       - roles/artifactregistry.writer
       - roles/storage.admin
+      - roles/iap.admin
 
 To reuse the GitHub Action, follow these steps:
 
@@ -187,7 +188,7 @@ If you want to execute the solution locally, follow these steps:
 
 1. Outside the dev container, build the Docker image:
 ```bash
-docker build -t LOCATION-docker.pkg.dev/PROJECT_ID/REPOSITORY_NAME/IMAGE_NAME:TAG .
+docker build --target web-app -t LOCATION-docker.pkg.dev/PROJECT_ID/REPOSITORY_NAME/IMAGE_NAME:TAG .
 ```
 
 2. Push the Docker image to Artifact Registry:
