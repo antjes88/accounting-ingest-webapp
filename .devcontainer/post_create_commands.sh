@@ -1,9 +1,9 @@
 #!/bin/bash
 # shellcheck disable=SC1091,SC2059
 
-sed -i 's/\r$//' /workspaces/template-python-devcontainer/cli/bin/template-python-devcontainer
-chmod +x /workspaces/template-python-devcontainer/cli/bin/template-python-devcontainer
-git config --global --add safe.directory /workspaces/template-python-devcontainer
+sed -i 's/\r$//' /workspaces/accounting-ingest-webapp/cli/bin/accounting-ingest-webapp
+chmod +x /workspaces/accounting-ingest-webapp/cli/bin/accounting-ingest-webapp
+git config --global --add safe.directory /workspaces/accounting-ingest-webapp
 gcloud auth application-default login
 
 FILE="./.devcontainer/git_config.sh"

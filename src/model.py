@@ -1,45 +1,38 @@
-from dataclasses import dataclass, field
-import datetime as dt
+from __future__ import annotations
+from dataclasses import dataclass
+from datetime import date
+from typing import Optional, Literal
+from decimal import Decimal
 
 
 @dataclass(frozen=True)
-class ExampleValueObject:
-    """
-    Value object for example purposes.
+class AccountType:
+    id: Optional[int]
+    name: Literal["Asset", "Liability", "Equity", "Revenue", "Expense"]
 
-    Attributes:
-        value (float): Some numerical value.
-        unit (str): Unit of the value.
-    """
 
-    value: float
-    unit: str
-
-    def __eq__(self, other) -> bool:
-        if not isinstance(other, ExampleValueObject):
-            return False
-        return self.value == other.value and self.unit == other.unit
+@dataclass(frozen=True)
+class EntryType:
+    id: Optional[int]
+    name: Literal["Debit", "Credit"]
 
 
 @dataclass
-class ExampleEntity:
-    """
-    Entity class for example purposes.
-
-    Attributes:
-        id (int): Unique identifier.
-        name (str): Name of the entity.
-        value_object (ExampleValueObject): Associated value object.
-        created_at (datetime): Timestamp of the entity creation.
-    """
-
-    id: int
+class Account:
+    id: Optional[int]
+    account_type: AccountType
     name: str
-    value_object: ExampleValueObject
-    created_at: dt.datetime = field(default_factory=dt.datetime.now)
+    father_account: Optional[Account] = None
+    is_physical: bool = True
+    is_archived: bool = False
 
-    def __eq__(self, other) -> bool:
-        if not isinstance(other, ExampleEntity):
-            return False
-        return self.id == other.id
-            
+    def __str__(self):
+        return f"Account name: {self.name}"
+
+
+@dataclass(frozen=True)
+class Transaction:
+    id: Optional[int]
+    date: date
+    description: Optional[str]
+    amount: Decimal

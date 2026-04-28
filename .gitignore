@@ -160,7 +160,9 @@ cython_debug/
 .idea/
 
 # others
+playground.py
 kindergarden.py
+database/permissions/*
 .devcontainer/git_config.sh
 ./temp
 ./tmp
