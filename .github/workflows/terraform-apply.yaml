@@ -63,7 +63,7 @@ jobs:
 
       - name: Terraform apply
         run: |
-          cd ./terraform/cloud_run_service
+          cd ./terraform
           echo "Initializing Terraform..."
           terraform init
 
