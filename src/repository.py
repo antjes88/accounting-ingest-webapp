@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List, Dict
+from typing import List
 from dataclasses import dataclass
 
 from src import model
@@ -22,12 +22,10 @@ class AbstractRepository(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def record_new_transaction(
+    def post_new_transaction(
         self,
         transaction: model.Transaction,
-        debit_account: model.Account,
-        credit_account: model.Account,
-    ):
+    ) -> None:
 
         raise NotImplementedError
 
@@ -112,27 +110,33 @@ class PostgresRepository(AbstractRepository):
             )
         )[0][0]
 
-    def record_new_transaction(
+    def post_new_transaction(
         self,
         transaction: model.Transaction,
-        debit_account: model.Account,
-        credit_account: model.Account,
-    ):
+    ) -> None:
         entry_types = {
             entry_type.name.lower(): entry_type.id
             for entry_type in self.get_entry_types()
         }
-        sql_statement = f"""
-        INSERT INTO {self.transactions_table} 
-        (transaction_id, transaction_date, transaction_description)
-        VALUES 
-        ({transaction.id}, '{transaction.date}', '{transaction.description}');
 
-        INSERT INTO {self.ledger_entries_table} 
-        (transaction_id, account_id, entry_type_id, amount)
-        VALUES 
-        ({transaction.id}, {debit_account.id}, {entry_types['debit']}, {transaction.amount}),
-        ({transaction.id}, {credit_account.id}, {entry_types['credit']}, {transaction.amount});
-        """
+        transaction_id = self.get_max_transaction_id() + 1
 
-        self.postgres_client.execute(sql_statement)
+        self.postgres_client.execute(
+            sql_queries.INSERT_NEW_TRANSACTION.format(
+                transaction_table=self.transactions_table,
+                ledger_entries_table=self.ledger_entries_table,
+            ),
+            params=(
+                transaction_id,
+                transaction.date,
+                transaction.description,
+                transaction_id,
+                transaction.get_debit_account_id(),
+                entry_types["debit"],
+                transaction.amount,
+                transaction_id,
+                transaction.get_credit_account_id(),
+                entry_types["credit"],
+                transaction.amount,
+            ),
+        )

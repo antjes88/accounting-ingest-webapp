@@ -8,6 +8,11 @@ from src.entrypoints.flaskapp.app import server
 
 
 def test_new_transaction_page_is_reached(client_logged_in):
+    """
+    GIVEN a logged-in client
+    WHEN the client requests the new transaction page
+    THEN the response status code should be 200 and the new transaction form HTML should be present.
+    """
     response = client_logged_in.get(
         "/accounting/new_transaction",
         follow_redirects=True,
@@ -22,6 +27,11 @@ def test_new_transaction_page_is_reached(client_logged_in):
 
 
 def test_new_transaction_post(client_logged_in, repo_with_data):
+    """
+    GIVEN a logged-in client and a repository with existing data
+    WHEN the client posts valid transaction data to the new transaction endpoint
+    THEN the response status code should be 200, a success message should be displayed, and the transaction should be correctly recorded in the database.
+    """
     transaction_date = dt.date(2024, 1, 1)
     description = "Test Post new transaction"
     amount = Decimal("999.87")

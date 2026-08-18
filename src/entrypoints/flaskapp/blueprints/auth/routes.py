@@ -8,8 +8,8 @@ from . import login_page
 @login_page.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
-        username = request.form.get("username")
-        password = request.form.get("password")
+        username = request.form.get("username") or ""
+        password = request.form.get("password") or ""
 
         if username == os.environ["USERNAME"] and check_password_hash(
             os.environ["HASHED_PASSWORD"], password

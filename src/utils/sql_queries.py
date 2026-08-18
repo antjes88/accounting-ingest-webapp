@@ -48,3 +48,17 @@ SELECT
 FROM {entry_types_table}
 ORDER BY entry_type_id;
 """
+
+
+INSERT_NEW_TRANSACTION = """
+INSERT INTO {transaction_table}
+(transaction_id, transaction_date, transaction_description)
+VALUES
+(%s, %s, %s);
+
+INSERT INTO {ledger_entries_table}
+(transaction_id, account_id, entry_type_id, amount)
+VALUES
+(%s, %s, %s, %s),
+(%s, %s, %s, %s)
+"""

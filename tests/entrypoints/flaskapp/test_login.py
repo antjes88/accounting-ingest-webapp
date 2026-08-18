@@ -1,5 +1,3 @@
-import os
-from flask import url_for
 import pytest
 
 from src.entrypoints.flaskapp.app import server
@@ -9,9 +7,9 @@ from tests.helpers.sample_data import web_credentials
 
 def test_login_page_is_reached(client):
     """
-    GIVEN a user surfing the web page
-    WHEN tries to access login_page.login
-    THEN makes sure that the right html is returned
+    GIVEN a Flask client
+    WHEN the '/login' page is requested
+    THEN the response status code should be 200 and the login form HTML should be present.
     """
     response = client.get("/login", follow_redirects=False)
 
@@ -24,6 +22,11 @@ def test_login_page_is_reached(client):
 
 @pytest.mark.parametrize("rule", get_protected_routes(server))
 def test_all_routes_redirect_to_login_if_not_logged_in(client, rule):
+    """
+    GIVEN a Flask client that is not logged in
+    WHEN a protected route is accessed
+    THEN the response status code should be 302 (redirect) to the login page.
+    """
 
     response = client.get(rule, follow_redirects=False)
 
@@ -33,6 +36,12 @@ def test_all_routes_redirect_to_login_if_not_logged_in(client, rule):
 
 
 def test_logout_works_correctly(client_logged_in):
+    """
+    GIVEN a logged-in Flask client
+    WHEN the client accesses the home page and then the '/logout' endpoint
+    THEN the home page should be accessible (status 200) and contain the menu,
+    and after logout, the login form HTML should be present, indicating a successful logout.
+    """
     response_login = client_logged_in.get(
         "/",
         follow_redirects=True,
@@ -55,6 +64,11 @@ def test_logout_works_correctly(client_logged_in):
 
 
 def test_login_success(client):
+    """
+    GIVEN a Flask client and valid web credentials
+    WHEN the client posts these credentials to the '/login' endpoint
+    THEN the response status code should be 200 and the menu HTML should be present, indicating a successful login.
+    """
     response = client.post(
         "/login",
         data=web_credentials,
@@ -70,9 +84,9 @@ def test_login_success(client):
 
 def test_login_fails_with_wrong_credentials(client):
     """
-    GIVEN a user with an existing account
-    WHEN tries to login with a wrong password
-    THEN a flash message "Wrong Credentials" is raised with category "danger"
+    GIVEN a Flask client and incorrect login credentials
+    WHEN the client posts these credentials to the '/login' endpoint
+    THEN the response status code should be 200 and a flash message "Wrong Credentials" with category "danger" should be displayed.
     """
     data = {"username": "not", "password": "not"}
     response = client.post("/login", data=data, follow_redirects=True)

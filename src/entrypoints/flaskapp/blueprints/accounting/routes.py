@@ -17,10 +17,10 @@ def new_transaction():
     try:
         repo = PostgresRepository(
             PostgresGCPClient(
-                host=os.getenv("HOST"),
-                database_name=os.getenv("DATABASE_NAME"),
-                user_name=os.getenv("USER_NAME"),
-                user_password=os.getenv("USER_PASSWORD"),
+                host=os.getenv("HOST") or "",
+                database_name=os.getenv("DATABASE_NAME") or "",
+                user_name=os.getenv("USER_NAME") or "",
+                user_password=os.getenv("USER_PASSWORD") or "",
                 port=5432,
             )
         )
@@ -31,9 +31,7 @@ def new_transaction():
         if (form.validate_on_submit()) & (request.method == "POST"):
             services.record_new_transaction(
                 repo=repo,
-                transaction=form.to_transaction(),
-                debit_account=form.get_debit_account(accounts),
-                credit_account=form.get_credit_account(accounts),
+                transaction=form.to_transaction(accounts),
             )
 
             flash("Transaction recorded successfully!", "success")

@@ -71,14 +71,26 @@ class NewTransactionForm(FlaskForm):
         self.type_debit.choices = type_choices
         self.type_credit.choices = type_choices
 
-    def to_transaction(self) -> model.Transaction:
+    def to_transaction(self, accounts: list[model.Account]) -> model.Transaction:
 
         if self.amount.data and self.date.data:
             return model.Transaction(
-                amount=Decimal(self.amount.data),
-                description=self.description.data,
-                date=self.date.data,
                 id=None,
+                date=self.date.data,
+                description=self.description.data,
+                amount=Decimal(self.amount.data),
+                lines=[
+                    model.TransactionLine(
+                        account=self.get_debit_account(accounts),
+                        amount=Decimal(self.amount.data),
+                        entry_type=model.EntryType(id=None, name="Debit"),
+                    ),
+                    model.TransactionLine(
+                        account=self.get_credit_account(accounts),
+                        amount=Decimal(self.amount.data),
+                        entry_type=model.EntryType(id=None, name="Credit"),
+                    ),
+                ],
             )
         raise ValueError("Amount and Date are required fields")
 
