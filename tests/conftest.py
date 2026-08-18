@@ -1,7 +1,8 @@
 import os
 import pytest
 from typing import Generator
-
+from flask import Flask
+from flask.testing import FlaskClient
 from src.utils.postgresql_client import PostgresGCPClient
 from src.repository import PostgresRepository
 from src.entrypoints.flaskapp.app import server
@@ -11,10 +12,10 @@ from tests.helpers.sample_data import web_credentials
 @pytest.fixture(scope="session")
 def db_conn() -> PostgresGCPClient:
     return PostgresGCPClient(
-        host=os.getenv("HOST"),
-        database_name=os.getenv("DATABASE_NAME"),
-        user_name=os.getenv("USER_NAME"),
-        user_password=os.getenv("USER_PASSWORD"),
+        host=os.getenv("HOST") or "",
+        database_name=os.getenv("DATABASE_NAME") or "",
+        user_name=os.getenv("USER_NAME") or "",
+        user_password=os.getenv("USER_PASSWORD") or "",
     )
 
 
@@ -27,8 +28,7 @@ def postgres_repo(db_conn: PostgresGCPClient) -> PostgresRepository:
 def repo_with_data(
     postgres_repo: PostgresRepository,
 ) -> Generator[PostgresRepository, None, None]:
-    postgres_repo.postgres_client.execute(
-        """
+    postgres_repo.postgres_client.execute("""
         TRUNCATE TABLE 
             accounting.ledger_entries, 
             accounting.transactions,
@@ -51,32 +51,29 @@ def repo_with_data(
         VALUES 
         (1, 2, 2, 100.00),
         (1, 4, 1, 100.00);
-        """
-    )
+        """)
 
     yield postgres_repo
 
-    postgres_repo.postgres_client.execute(
-        """
+    postgres_repo.postgres_client.execute("""
         TRUNCATE TABLE
             accounting.ledger_entries,
             accounting.transactions,
             accounting.accounts
         RESTART IDENTITY CASCADE;
-        """
-    )
+        """)
 
 
-@pytest.fixture(scope="function")
-def client():
+@pytest.fixture(scope="function")  # type: ignore
+def client() -> Generator[FlaskClient, None, None]:
     server.config["TESTING"] = True
     server.config["WTF_CSRF_ENABLED"] = False
     with server.test_client() as client:
         yield client
 
 
-@pytest.fixture(scope="function")
-def client_logged_in(client):
+@pytest.fixture(scope="function")  # type: ignore
+def client_logged_in(client: FlaskClient) -> Generator[FlaskClient, None, None]:
     client.post(
         "/login",
         data=web_credentials,

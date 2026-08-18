@@ -11,6 +11,12 @@ from tests.helpers.sample_data import (
 
 
 def test_record_new_transaction(repo_with_data: PostgresRepository):
+    """
+    GIVEN a PostgresRepository with existing data and a valid Transaction object
+    WHEN the record_new_transaction service is called with the repository and the Transaction object
+    THEN the transaction should be successfully recorded in the database,
+    and the transaction details and ledger entries should match the provided data.
+    """
     transaction_date = date(2001, 6, 1)
     description = "Test services new trans"
     amount = Decimal("123.98")
@@ -22,9 +28,19 @@ def test_record_new_transaction(repo_with_data: PostgresRepository):
             date=transaction_date,
             description=description,
             amount=amount,
+            lines=[
+                model.TransactionLine(
+                    account=petty_cash_account,
+                    amount=amount,
+                    entry_type=model.EntryType(id=1, name="Debit"),
+                ),
+                model.TransactionLine(
+                    account=work_income_account,
+                    amount=amount,
+                    entry_type=model.EntryType(id=2, name="Credit"),
+                ),
+            ],
         ),
-        debit_account=petty_cash_account,
-        credit_account=work_income_account,
     )
     transaction_id = repo_with_data.get_max_transaction_id()
 
