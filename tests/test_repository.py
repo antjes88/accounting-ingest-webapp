@@ -11,6 +11,44 @@ from tests.helpers.sample_data import (
 )
 
 
+def test_entry_type_enum_and_db_alignment(repo_with_data: PostgresRepository):
+    """
+    GIVEN a PostgresRepository
+    WHEN the EntryType enum values are compared with the database's entry_types table
+    THEN their IDs and names should be correctly aligned.
+    """
+    db_entry_types = repo_with_data.postgres_client.query(
+        f"SELECT entry_type_id, entry_type_name FROM {repo_with_data.entry_types_table} ORDER BY entry_type_id"
+    )
+
+    enum_entry_types = sorted(
+        [(entry.id, entry.display_name) for entry in model.EntryType],
+        key=lambda x: x[0],
+    )
+
+    assert len(db_entry_types) == len(enum_entry_types)
+    assert db_entry_types == enum_entry_types
+
+
+def test_account_type_enum_and_db_alignment(repo_with_data: PostgresRepository):
+    """
+    GIVEN a PostgresRepository
+    WHEN the AccountType enum values are compared with the database's account_types table
+    THEN their IDs and names should be correctly aligned.
+    """
+    db_account_types = repo_with_data.postgres_client.query(
+        f"SELECT account_type_id, account_type_name FROM {repo_with_data.account_types_table} ORDER BY account_type_id"
+    )
+
+    enum_account_types = sorted(
+        [(entry.id, entry.display_name) for entry in model.AccountType],
+        key=lambda x: x[0],
+    )
+
+    assert len(db_account_types) == len(enum_account_types)
+    assert db_account_types == enum_account_types
+
+
 def test_sql_table_str():
     """
     GIVEN a SqlTable object with a schema and a name
@@ -19,20 +57,6 @@ def test_sql_table_str():
     """
     table = SqlTable(schema="test_schema", name="test_table")
     assert str(table) == "test_schema.test_table"
-
-
-def test_get_entry_types(postgres_repo: PostgresRepository):
-    """
-    GIVEN an initialized PostgresRepository
-    WHEN the get_entry_types method is called
-    THEN it should return a list containing exactly two EntryType objects,
-    one for "Debit" and one for "Credit".
-    """
-    entry_types = postgres_repo.get_entry_types()
-
-    assert len(entry_types) == 2
-    assert any(et.name == "Debit" for et in entry_types)
-    assert any(et.name == "Credit" for et in entry_types)
 
 
 def test_get_accounts(repo_with_data: PostgresRepository):
@@ -81,12 +105,12 @@ def test_record_new_transaction(repo_with_data: PostgresRepository):
                 model.TransactionLine(
                     account=petty_cash_account,
                     amount=amount,
-                    entry_type=model.EntryType(id=1, name="Debit"),
+                    entry_type=model.EntryType.DEBIT,
                 ),
                 model.TransactionLine(
                     account=work_income_account,
                     amount=amount,
-                    entry_type=model.EntryType(id=2, name="Credit"),
+                    entry_type=model.EntryType.CREDIT,
                 ),
             ],
         )

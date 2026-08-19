@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS accounting.entry_types (
 );
 
 INSERT INTO accounting.entry_types
-(entry_type_name)
+(entry_type_id, entry_type_name)
 VALUES
-('Credit'),
-('Debit');
+(1, 'Credit'),
+(2, 'Debit');

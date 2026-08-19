@@ -8,10 +8,10 @@ CREATE TABLE IF NOT EXISTS accounting.account_types (
 );
 
 INSERT INTO accounting.account_types
-(account_type_name)
+(account_type_id, account_type_name)
 VALUES
-('Asset'),
-('Liability'),
-('Equity'),
-('Revenue'),
-('Expense');
+(1, 'Asset'),
+(2, 'Liability'),
+(3, 'Equity'),
+(4, 'Revenue'),
+(5, 'Expense');

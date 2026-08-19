@@ -4,12 +4,13 @@ from decimal import Decimal
 from src.model import Account, AccountType, EntryType, Transaction, TransactionLine
 
 # Common test data
-asset_type = AccountType(id=1, name="Asset")
-revenue_type = AccountType(id=4, name="Revenue")
+asset_type = AccountType.ASSET
+revenue_type = AccountType.REVENUE
 cash_account = Account(id=1, account_type=asset_type, name="Cash")
+
 income_account = Account(id=3, account_type=revenue_type, name="Work Income")
-debit_entry = EntryType(id=1, name="Debit")
-credit_entry = EntryType(id=2, name="Credit")
+debit_entry = EntryType.DEBIT
+credit_entry = EntryType.CREDIT
 
 
 def test_account_str_representation():
@@ -18,10 +19,33 @@ def test_account_str_representation():
     WHEN its string representation is requested
     THEN it should return a formatted string containing the account name.
     """
-    acc_type = AccountType(id=1, name="Asset")
+    acc_type = AccountType.ASSET
     account = Account(id=1, account_type=acc_type, name="Cash")
 
     assert str(account) == "Account name: Cash"
+
+
+def test_account_type_from_id_valid_id():
+    """
+    GIVEN a valid AccountType ID
+    WHEN AccountType.from_id is called with that ID
+    THEN the correct AccountType enum member should be returned.
+    """
+    assert AccountType.from_id(1) == AccountType.ASSET
+    assert AccountType.from_id(4) == AccountType.REVENUE
+
+
+def test_account_type_from_id_invalid_id():
+    """
+    GIVEN an invalid AccountType ID
+    WHEN AccountType.from_id is called with that ID
+    THEN a ValueError should be raised.
+    """
+    with pytest.raises(ValueError, match="No AccountType with id 99"):
+        AccountType.from_id(99)
+
+    with pytest.raises(ValueError, match="No AccountType with id 0"):
+        AccountType.from_id(0)
 
 
 @pytest.mark.parametrize(
