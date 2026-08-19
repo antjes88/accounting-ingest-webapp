@@ -18,10 +18,6 @@ class AbstractRepository(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def get_entry_types(self) -> List[model.EntryType]:
-        raise NotImplementedError
-
-    @abstractmethod
     def post_new_transaction(
         self,
         transaction: model.Transaction,
@@ -49,15 +45,6 @@ class PostgresRepository(AbstractRepository):
     def __init__(self, postgres_client: PostgresGCPClient):
         self.postgres_client = postgres_client
 
-    def get_entry_types(self) -> List[model.EntryType]:
-        rows = self.postgres_client.query(
-            sql_queries.SELECT_ENTRY_TYPES.format(
-                entry_types_table=self.entry_types_table
-            )
-        )
-
-        return [model.EntryType(name=row[0], id=row[1]) for row in rows]
-
     def get_accounts(self) -> List[model.Account]:
 
         accounts = {}
@@ -71,7 +58,7 @@ class PostgresRepository(AbstractRepository):
         for row in father_rows:
             account = model.Account(
                 id=row[0],
-                account_type=model.AccountType(row[1], row[2]),
+                account_type=model.AccountType.from_id(row[1]),
                 name=row[3],
                 is_physical=row[4],
                 is_archived=row[5],
@@ -88,7 +75,7 @@ class PostgresRepository(AbstractRepository):
         for row in children_rows:
             account = model.Account(
                 id=row[0],
-                account_type=model.AccountType(row[1], row[2]),
+                account_type=model.AccountType.from_id(row[1]),
                 name=row[3],
                 is_physical=row[4],
                 is_archived=row[5],
@@ -110,14 +97,7 @@ class PostgresRepository(AbstractRepository):
             )
         )[0][0]
 
-    def post_new_transaction(
-        self,
-        transaction: model.Transaction,
-    ) -> None:
-        entry_types = {
-            entry_type.name.lower(): entry_type.id
-            for entry_type in self.get_entry_types()
-        }
+    def post_new_transaction(self, transaction: model.Transaction) -> None:
 
         transaction_id = self.get_max_transaction_id() + 1
 
@@ -132,11 +112,11 @@ class PostgresRepository(AbstractRepository):
                 transaction.description,
                 transaction_id,
                 transaction.get_debit_account_id(),
-                entry_types["debit"],
+                model.EntryType.DEBIT.id,
                 transaction.amount,
                 transaction_id,
                 transaction.get_credit_account_id(),
-                entry_types["credit"],
+                model.EntryType.CREDIT.id,
                 transaction.amount,
             ),
         )

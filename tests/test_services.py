@@ -32,12 +32,12 @@ def test_record_new_transaction(repo_with_data: PostgresRepository):
                 model.TransactionLine(
                     account=petty_cash_account,
                     amount=amount,
-                    entry_type=model.EntryType(id=1, name="Debit"),
+                    entry_type=model.EntryType.DEBIT,
                 ),
                 model.TransactionLine(
                     account=work_income_account,
                     amount=amount,
-                    entry_type=model.EntryType(id=2, name="Credit"),
+                    entry_type=model.EntryType.CREDIT,
                 ),
             ],
         ),

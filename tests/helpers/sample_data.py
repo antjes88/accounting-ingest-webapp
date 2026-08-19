@@ -9,14 +9,14 @@ web_credentials = {
 
 cash_account = model.Account(
     id=1,
-    account_type=model.AccountType(id=1, name="Asset"),
+    account_type=model.AccountType.ASSET,
     name="Cash",
     is_physical=True,
     is_archived=False,
 )
 petty_cash_account = model.Account(
     id=2,
-    account_type=model.AccountType(id=1, name="Asset"),
+    account_type=model.AccountType.ASSET,
     name="Petty Cash",
     is_physical=True,
     is_archived=True,
@@ -24,20 +24,20 @@ petty_cash_account = model.Account(
 )
 work_income_account = model.Account(
     id=3,
-    account_type=model.AccountType(id=4, name="Revenue"),
+    account_type=model.AccountType.REVENUE,
     name="Work Income",
     is_physical=True,
     is_archived=False,
 )
 base_salary_account = model.Account(
     id=4,
-    account_type=model.AccountType(id=4, name="Revenue"),
+    account_type=model.AccountType.REVENUE,
     name="Base Salary",
     is_physical=True,
     is_archived=False,
     father_account=model.Account(
         id=3,
-        account_type=model.AccountType(id=4, name="Revenue"),
+        account_type=model.AccountType.REVENUE,
         name="Work Income",
         is_physical=True,
         is_archived=False,

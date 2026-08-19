@@ -125,7 +125,7 @@ The client for data storage have been implemented following the Repository patte
     <img src="docs/images/adapters_diagram.png" alt="Adapters Diagram">
 </p>
 
-In the picture above you can also find the Domain Model diagram representing the code found in `src/model` folder. Circles are value objects and rectangles are entities.
+In the picture above you can also find the Domain Model diagram representing the code found in `src/model` folder.
 
 
 ## CI/CD - Pipeline Integration

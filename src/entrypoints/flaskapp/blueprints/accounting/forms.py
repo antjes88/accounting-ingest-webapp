@@ -55,21 +55,23 @@ class NewTransactionForm(FlaskForm):
                     (
                         acc.name,
                         acc.name,
-                        {"data-type": acc.account_type.name},
+                        {"data-type": acc.account_type.display_name},
                     )
                 )
-                if acc.account_type.name not in [choice[1] for choice in type_choices]:
+                if acc.account_type.display_name not in [
+                    choice[1] for choice in type_choices
+                ]:
                     type_choices.append(
                         (
-                            acc.account_type.name,
-                            acc.account_type.name,
+                            acc.account_type.display_name,
+                            acc.account_type.display_name,
                         )
                     )
 
-        self.account_debit.choices = acc_choices
-        self.account_credit.choices = acc_choices
-        self.type_debit.choices = type_choices
-        self.type_credit.choices = type_choices
+        self.account_debit.choices = sorted(acc_choices)
+        self.account_credit.choices = sorted(acc_choices)
+        self.type_debit.choices = sorted(type_choices)
+        self.type_credit.choices = sorted(type_choices)
 
     def to_transaction(self, accounts: list[model.Account]) -> model.Transaction:
 
@@ -83,12 +85,12 @@ class NewTransactionForm(FlaskForm):
                     model.TransactionLine(
                         account=self.get_debit_account(accounts),
                         amount=Decimal(self.amount.data),
-                        entry_type=model.EntryType(id=None, name="Debit"),
+                        entry_type=model.EntryType.DEBIT,
                     ),
                     model.TransactionLine(
                         account=self.get_credit_account(accounts),
                         amount=Decimal(self.amount.data),
-                        entry_type=model.EntryType(id=None, name="Credit"),
+                        entry_type=model.EntryType.CREDIT,
                     ),
                 ],
             )
