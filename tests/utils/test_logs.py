@@ -1,8 +1,10 @@
-from src.utils.logs import default_module_logger
+from pytest import LogCaptureFixture
 import logging
 
+from src.utils.logs import default_module_logger
 
-def test_default_module_logger_writes_messages_to_console(caplog):
+
+def test_default_module_logger_writes_messages_to_console(caplog: LogCaptureFixture):
     """
     GIVEN a source file name
     WHEN default_module_logger is called and a log message is emitted

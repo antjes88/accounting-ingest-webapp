@@ -1,3 +1,4 @@
+from flask.testing import FlaskClient
 import pytest
 
 from src.entrypoints.flaskapp.app import server
@@ -5,7 +6,7 @@ from tests.helpers.flask_helpers import get_protected_routes
 from tests.helpers.sample_data import web_credentials
 
 
-def test_login_page_is_reached(client):
+def test_login_page_is_reached(client: FlaskClient):
     """
     GIVEN a Flask client
     WHEN the '/login' page is requested
@@ -21,7 +22,7 @@ def test_login_page_is_reached(client):
 
 
 @pytest.mark.parametrize("rule", get_protected_routes(server))
-def test_all_routes_redirect_to_login_if_not_logged_in(client, rule):
+def test_all_routes_redirect_to_login_if_not_logged_in(client: FlaskClient, rule: str):
     """
     GIVEN a Flask client that is not logged in
     WHEN a protected route is accessed
@@ -35,7 +36,7 @@ def test_all_routes_redirect_to_login_if_not_logged_in(client, rule):
     assert response.status_code == 302, f"Error in {rule}: should redirect."
 
 
-def test_logout_works_correctly(client_logged_in):
+def test_logout_works_correctly(client_logged_in: FlaskClient):
     """
     GIVEN a logged-in Flask client
     WHEN the client accesses the home page and then the '/logout' endpoint
@@ -63,7 +64,7 @@ def test_logout_works_correctly(client_logged_in):
     )
 
 
-def test_login_success(client):
+def test_login_success(client: FlaskClient):
     """
     GIVEN a Flask client and valid web credentials
     WHEN the client posts these credentials to the '/login' endpoint
@@ -82,7 +83,7 @@ def test_login_success(client):
     )
 
 
-def test_login_fails_with_wrong_credentials(client):
+def test_login_fails_with_wrong_credentials(client: FlaskClient):
     """
     GIVEN a Flask client and incorrect login credentials
     WHEN the client posts these credentials to the '/login' endpoint

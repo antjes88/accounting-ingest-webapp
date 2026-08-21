@@ -14,15 +14,18 @@ class AbstractRepository(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def get_max_transaction_id(self) -> int:
-        raise NotImplementedError
-
-    @abstractmethod
     def post_new_transaction(
         self,
         transaction: model.Transaction,
     ) -> None:
 
+        raise NotImplementedError
+
+    @abstractmethod
+    def post_new_account(
+        self,
+        account: model.Account,
+    ) -> None:
         raise NotImplementedError
 
 
@@ -97,6 +100,13 @@ class PostgresRepository(AbstractRepository):
             )
         )[0][0]
 
+    def get_max_account_id(self) -> int:
+        return self.postgres_client.query(
+            sql_queries.SELECT_MAX_ID_ACCOUNTS.format(
+                accounts_table=self.accounts_table
+            )
+        )[0][0]
+
     def post_new_transaction(self, transaction: model.Transaction) -> None:
 
         transaction_id = self.get_max_transaction_id() + 1
@@ -118,5 +128,22 @@ class PostgresRepository(AbstractRepository):
                 transaction.get_credit_account_id(),
                 model.EntryType.CREDIT.id,
                 transaction.amount,
+            ),
+        )
+
+    def post_new_account(self, account: model.Account) -> None:
+        account_id = self.get_max_account_id() + 1
+
+        self.postgres_client.execute(
+            sql_queries.INSERT_NEW_ACCOUNT.format(
+                accounts_table=self.accounts_table,
+            ),
+            params=(
+                account_id,
+                account.father_account.id if account.father_account else None,
+                account.account_type.id,
+                account.name,
+                account.is_physical,
+                account.is_archived,
             ),
         )

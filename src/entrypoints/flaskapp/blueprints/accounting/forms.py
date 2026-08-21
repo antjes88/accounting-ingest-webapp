@@ -1,8 +1,7 @@
 from decimal import Decimal
 from flask_wtf import FlaskForm
 from wtforms import SelectField, FloatField, StringField, DateField, SubmitField
-from wtforms.validators import DataRequired, optional, InputRequired
-from typing import List
+from wtforms.validators import DataRequired, optional
 
 from src import model
 
@@ -10,7 +9,7 @@ from src import model
 class NewTransactionForm(FlaskForm):
     type_debit = SelectField(
         "debit",
-        default="-- Choose Account Type --",
+        default="-- Select Account Type --",
         choices=[],
         validators=[DataRequired()],
         id="debit",
@@ -18,7 +17,7 @@ class NewTransactionForm(FlaskForm):
 
     type_credit = SelectField(
         "credit",
-        default="-- Choose Account Type --",
+        default="-- Select Account Type --",
         choices=[],
         validators=[DataRequired()],
         id="credit",
@@ -26,14 +25,14 @@ class NewTransactionForm(FlaskForm):
 
     account_debit = SelectField(
         "Account Debit",
-        default="-- Choose an Account --",
+        default="-- Select an Account --",
         choices=[],
         validators=[DataRequired()],
         id="account_debit",
     )
     account_credit = SelectField(
         "Account Credit",
-        default="-- Choose an Account --",
+        default="-- Select an Account --",
         choices=[],
         validators=[DataRequired()],
         id="account_credit",
@@ -47,31 +46,36 @@ class NewTransactionForm(FlaskForm):
     def __init__(self, accounts: list[model.Account], *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        acc_choices: List = [("", "-- Choose an Account --")]
-        type_choices: List = [("", "-- Choose Account Type --")]
-        for acc in accounts:
-            if acc.father_account is not None:
-                acc_choices.append(
+        acc_choices = sorted(
+            [
+                ("", "-- Select an Account --"),
+                *(
                     (
-                        acc.name,
-                        acc.name,
-                        {"data-type": acc.account_type.display_name},
+                        str(account.id),
+                        account.name,
+                        {"data-type": str(account.account_type.id)},
                     )
-                )
-                if acc.account_type.display_name not in [
-                    choice[1] for choice in type_choices
-                ]:
-                    type_choices.append(
-                        (
-                            acc.account_type.display_name,
-                            acc.account_type.display_name,
-                        )
-                    )
+                    for account in accounts
+                    if not account.is_father_account
+                ),
+            ],
+            key=lambda x: x[1],
+        )
+        type_choices = sorted(
+            [
+                ("", "-- Select Account Type --"),
+                *(
+                    (str(account_type.id), account_type.display_name)
+                    for account_type in model.AccountType
+                ),
+            ],
+            key=lambda x: x[-1],
+        )
 
-        self.account_debit.choices = sorted(acc_choices)
-        self.account_credit.choices = sorted(acc_choices)
-        self.type_debit.choices = sorted(type_choices)
-        self.type_credit.choices = sorted(type_choices)
+        self.account_debit.choices = acc_choices
+        self.account_credit.choices = acc_choices
+        self.type_debit.choices = type_choices
+        self.type_credit.choices = type_choices
 
     def to_transaction(self, accounts: list[model.Account]) -> model.Transaction:
 
@@ -98,12 +102,91 @@ class NewTransactionForm(FlaskForm):
 
     def get_debit_account(self, accounts: list[model.Account]) -> model.Account:
         for account in accounts:
-            if account.name == self.account_debit.data:
+            if account.id == int(self.account_debit.data):
                 return account
         raise ValueError("No matching debit account found")
 
     def get_credit_account(self, accounts: list[model.Account]) -> model.Account:
         for account in accounts:
-            if account.name == self.account_credit.data:
+            if account.id == int(self.account_credit.data):
                 return account
         raise ValueError("No matching credit account found")
+
+
+class NewAccountForm(FlaskForm):
+    account_type = SelectField(
+        "Account Type",
+        choices=[],
+        validators=[DataRequired()],
+        id="account_type",
+    )
+    name = StringField("Account Name", validators=[DataRequired()])
+    father_account = SelectField(
+        "Father Account (Optional)",
+        choices=[],
+        validators=[optional()],
+        id="father_account",
+    )
+    is_physical = SelectField(
+        "Is Physical Account?",
+        choices=[("True", "Yes"), ("False", "No")],
+        validators=[DataRequired()],
+        id="is_physical",
+    )
+    is_archived = SelectField(
+        "Is Archived?",
+        choices=[("False", "No"), ("True", "Yes")],
+        validators=[DataRequired()],
+        id="is_archived",
+    )
+    submit = SubmitField("Create Account")
+
+    def __init__(self, accounts: list[model.Account], *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.account_type.choices = sorted(
+            [
+                ("", "-- Select Account Type --"),
+                *(
+                    (str(account_type.id), account_type.display_name)
+                    for account_type in model.AccountType
+                ),
+            ],
+            key=lambda x: x[-1],
+        )
+        self.father_account.choices = sorted(
+            [
+                ("", "-- Select Father Account (Optional) --"),
+                *(
+                    (
+                        str(account.id),
+                        account.name,
+                        {"data-type": str(account.account_type.id)},
+                    )
+                    for account in accounts
+                    if account.is_father_account
+                ),
+            ],
+            key=lambda x: x[1],
+        )
+
+    def to_account(self, accounts: list[model.Account]) -> model.Account:
+        father_acc = None
+        if self.father_account.data:
+            father_acc = next(
+                (
+                    account
+                    for account in accounts
+                    if account.id == int(self.father_account.data)
+                ),
+                None,
+            )
+
+        return model.Account(
+            id=None,
+            account_type=model.AccountType.from_id(int(self.account_type.data)),
+            name=self.name.data,  # type: ignore
+            father_account=father_acc,
+            is_physical=self.is_physical.data == "True",
+            is_archived=self.is_archived.data == "True",
+        )

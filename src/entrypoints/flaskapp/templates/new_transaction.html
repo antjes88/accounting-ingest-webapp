@@ -112,9 +112,9 @@
 
         filter.addEventListener('change', function () {
             const selectedType = this.value;
-            accountSelect.innerHTML = '<option value="">-- Choose an Account --</option>';
+            accountSelect.innerHTML = '<option value="">-- Select an Account --</option>';
 
-            if (selectedType && selectedType !== "None" && selectedType !== "Choose Account Type") {
+            if (selectedType && selectedType !== "None" && selectedType !== "Select Account Type") {
                 let hasMatches = false;
                 allOptions.forEach(opt => {
                     if (opt.getAttribute('data-type') === selectedType) {

@@ -62,12 +62,41 @@ class Account:
     def __str__(self):
         return f"Account name: {self.name}"
 
+    def __post_init__(self):
+        if self.father_account is not None:
+            if self.father_account.father_account is not None:
+                raise ValueError(
+                    f"Invalid hierarchy: Account '{self.father_account.name}' is already "
+                    "a child account and cannot be assigned as a father account."
+                )
+
+    @property
+    def is_father_account(self):
+        if self.father_account:
+            return False
+        else:
+            return True
+
 
 @dataclass(frozen=True)
 class TransactionLine:
     account: Account
     amount: Decimal
     entry_type: EntryType
+
+    def __post_init__(self):
+        if self.amount <= 0:
+            raise ValueError("Transaction line amount must be greater than zero.")
+
+        if self.account.is_archived:
+            raise ValueError(
+                f"Cannot create a transaction line for archived account: {self.account.name}."
+            )
+
+        if self.account.is_father_account:
+            raise ValueError(
+                f"Cannot create a transaction line for father account: {self.account.name}."
+            )
 
 
 @dataclass
