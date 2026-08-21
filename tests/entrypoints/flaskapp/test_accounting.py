@@ -125,9 +125,6 @@ def test_new_account_post(
     )
     account_id = repo_with_data.get_max_account_id()
 
-    with open("/workspaces/accounting-ingest-webapp/check.html", "w") as f:
-        f.write(response.data.decode("utf-8"))
-
     assert response.status_code == 200
     assert b"Account created successfully!" in response.data
     assert repo_with_data.postgres_client.query(
