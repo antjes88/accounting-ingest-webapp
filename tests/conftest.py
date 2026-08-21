@@ -38,9 +38,10 @@ def repo_with_data(
         INSERT INTO accounting.accounts 
         (account_id, account_type_id, account_name, is_physical, is_archived, father_account_id)
         VALUES (1, 1, 'Cash', true, false, null),
-               (2, 1, 'Petty Cash', true, true, 1),
+               (2, 1, 'Petty Cash', true, false, 1),
                (3, 4, 'Work Income', true, false, null),
-               (4, 4, 'Base Salary', true, false, 3);
+               (4, 4, 'Base Salary', true, false, 3),
+               (5, 4, 'Archived', true, true, 3);
         
         INSERT INTO accounting.transactions
         (transaction_id, transaction_date, transaction_description)

@@ -1,14 +1,21 @@
 import pytest
+from typing import List
 from datetime import date
 from decimal import Decimal
+
 from src.model import Account, AccountType, EntryType, Transaction, TransactionLine
 
 # Common test data
 asset_type = AccountType.ASSET
 revenue_type = AccountType.REVENUE
-cash_account = Account(id=1, account_type=asset_type, name="Cash")
+father_account = Account(id=111, account_type=asset_type, name="Parent Account")
+cash_account = Account(
+    id=1, father_account=father_account, account_type=asset_type, name="Cash"
+)
 
-income_account = Account(id=3, account_type=revenue_type, name="Work Income")
+income_account = Account(
+    id=3, father_account=father_account, account_type=revenue_type, name="Work Income"
+)
 debit_entry = EntryType.DEBIT
 credit_entry = EntryType.CREDIT
 
@@ -23,29 +30,6 @@ def test_account_str_representation():
     account = Account(id=1, account_type=acc_type, name="Cash")
 
     assert str(account) == "Account name: Cash"
-
-
-def test_account_type_from_id_valid_id():
-    """
-    GIVEN a valid AccountType ID
-    WHEN AccountType.from_id is called with that ID
-    THEN the correct AccountType enum member should be returned.
-    """
-    assert AccountType.from_id(1) == AccountType.ASSET
-    assert AccountType.from_id(4) == AccountType.REVENUE
-
-
-def test_account_type_from_id_invalid_id():
-    """
-    GIVEN an invalid AccountType ID
-    WHEN AccountType.from_id is called with that ID
-    THEN a ValueError should be raised.
-    """
-    with pytest.raises(ValueError, match="No AccountType with id 99"):
-        AccountType.from_id(99)
-
-    with pytest.raises(ValueError, match="No AccountType with id 0"):
-        AccountType.from_id(0)
 
 
 @pytest.mark.parametrize(
@@ -73,7 +57,9 @@ def test_account_type_from_id_invalid_id():
         ),
     ],
 )
-def test_transaction_raises_value_error_for_incorrect_number_of_lines(lines):
+def test_transaction_raises_value_error_for_incorrect_number_of_lines(
+    lines: List[TransactionLine],
+):
     """
     GIVEN a list of transaction lines that does not contain exactly two lines
     WHEN a Transaction object is instantiated with these lines

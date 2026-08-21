@@ -19,7 +19,7 @@ petty_cash_account = model.Account(
     account_type=model.AccountType.ASSET,
     name="Petty Cash",
     is_physical=True,
-    is_archived=True,
+    is_archived=False,
     father_account=cash_account,
 )
 work_income_account = model.Account(
@@ -35,11 +35,13 @@ base_salary_account = model.Account(
     name="Base Salary",
     is_physical=True,
     is_archived=False,
-    father_account=model.Account(
-        id=3,
-        account_type=model.AccountType.REVENUE,
-        name="Work Income",
-        is_physical=True,
-        is_archived=False,
-    ),
+    father_account=work_income_account,
+)
+archived_account = model.Account(
+    id=5,
+    account_type=model.AccountType.REVENUE,
+    name="Archived",
+    is_physical=True,
+    is_archived=True,
+    father_account=work_income_account,
 )

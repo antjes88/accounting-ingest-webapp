@@ -5,7 +5,7 @@ from utils.postgresql_client import PostgresGCPClient
 
 
 @pytest.fixture(scope="function")
-def execute_create_table(db_conn):
+def execute_create_table(db_conn: PostgresGCPClient):
     statement_create_table = """
     DROP TABLE IF EXISTS test.simple; 
     DROP SCHEMA IF EXISTS test;
@@ -32,7 +32,7 @@ def execute_create_table(db_conn):
     db_conn.execute("DROP TABLE IF EXISTS test.simple; DROP SCHEMA IF EXISTS test")
 
 
-def test_execute(execute_create_table):
+def test_execute(execute_create_table: PostgresGCPClient):
     statement = "SELECT * FROM test.simple ORDER BY id ASC;"
     actual_data = execute_create_table.query(statement)
 
@@ -45,19 +45,19 @@ def test_execute(execute_create_table):
     assert actual_data == expected_data
 
 
-def test_execute_raises_exception_with_wrong_statement(db_conn):
+def test_execute_raises_exception_with_wrong_statement(db_conn: PostgresGCPClient):
     statement = "INVALID SQL STATEMENT;"
     with pytest.raises(Exception):
         db_conn.execute(statement)
 
 
-def test_query_raises_exception_with_wrong_statement(db_conn):
+def test_query_raises_exception_with_wrong_statement(db_conn: PostgresGCPClient):
     statement = "INVALID SQL STATEMENT;"
     with pytest.raises(Exception):
         db_conn.query(statement)
 
 
-def test_create_connection_raises_exception_with_wrong_credentials(db_conn):
+def test_create_connection_raises_exception_with_wrong_credentials():
     db_conn_wrong_credentials = PostgresGCPClient(
         host="11.222.333.444",
         database_name="wrong_database",

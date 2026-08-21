@@ -62,3 +62,20 @@ VALUES
 (%s, %s, %s, %s),
 (%s, %s, %s, %s)
 """
+
+SELECT_MAX_ID_ACCOUNTS = """
+SELECT
+    CASE
+      WHEN max(account_id) IS NULL
+        THEN 0
+      ELSE max(account_id)
+    END AS max_id
+FROM {accounts_table};
+"""
+
+INSERT_NEW_ACCOUNT = """
+INSERT INTO {accounts_table}
+(account_id, father_account_id, account_type_id, account_name, is_physical, is_archived)
+VALUES
+(%s, %s, %s, %s, %s, %s);
+"""
