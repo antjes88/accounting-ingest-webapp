@@ -99,47 +99,72 @@ class TransactionLine:
             )
 
 
-@dataclass
 class Transaction:
-    id: Optional[int]
-    date: date
-    description: Optional[str]
-    amount: Decimal
-    lines: List[TransactionLine]
+    def __init__(
+        self,
+        id: Optional[int],
+        date: date,
+        description: Optional[str],
+        lines: List[TransactionLine],
+    ):
+        self._id = id
+        self._date = date
+        self._description = description
+        self._lines = lines
 
-    def __post_init__(self):
-        # By design, only one debit and one credit line
-        if len(self.lines) != 2:
+        self._validate_integrity()
+
+    def _validate_integrity(self):
+        if len(self._lines) != 2:
             raise ValueError("A transaction must contain exactly two lines.")
 
-        total_debits = sum(
-            line.amount
-            for line in self.lines
-            if line.entry_type.display_name == "Debit"
+        debits = sum(
+            line.amount for line in self._lines if line.entry_type == EntryType.DEBIT
         )
-        total_credits = sum(
-            line.amount
-            for line in self.lines
-            if line.entry_type.display_name == "Credit"
+        credits = sum(
+            line.amount for line in self._lines if line.entry_type == EntryType.CREDIT
         )
 
-        if total_debits != total_credits:
-            raise ValueError(
-                f"Unbalanced entry. Total Debits ({total_debits}) must equal Total Credits ({total_credits})."
-            )
+        if debits != credits:
+            raise ValueError("The transaction is not balanced.")
+
+    def __eq__(self, other):
+        if not isinstance(other, Transaction) or self._id is None or other._id is None:
+            return self is other
+        return self._id == other._id
+
+    def __hash__(self):
+        return hash(self._id) if self._id else id(self)
 
     def get_debit_account_id(self) -> int:
-        # By design, only one debit and one credit
         return next(
             line.account.id
-            for line in self.lines
-            if line.entry_type.display_name == "Debit"
+            for line in self._lines
+            if line.entry_type == EntryType.DEBIT
         )  # type: ignore
 
     def get_credit_account_id(self) -> int:
-        # By design, only one debit and one credit
         return next(
             line.account.id
-            for line in self.lines
-            if line.entry_type.display_name == "Credit"
+            for line in self._lines
+            if line.entry_type == EntryType.CREDIT
         )  # type: ignore
+
+    @property
+    def id(self) -> Optional[int]:
+        return self._id
+
+    @property
+    def date(self) -> date:
+        return self._date
+
+    @property
+    def amount(self) -> Decimal:
+        return sum(
+            (line.amount for line in self._lines if line.entry_type == EntryType.DEBIT),
+            Decimal("0"),
+        )
+
+    @property
+    def description(self) -> Optional[str]:
+        return self._description

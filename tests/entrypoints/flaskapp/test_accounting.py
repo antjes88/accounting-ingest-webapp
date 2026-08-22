@@ -20,7 +20,6 @@ def test_new_transaction_page_is_reached(client_logged_in: FlaskClient):
         follow_redirects=True,
     )
 
-    print(f"Response status code: {response.data}")
     assert 200 == response.status_code
     assert (
         b"<!--new_transaction_form this comment is to check that it is reached on test-->"
@@ -39,7 +38,6 @@ def test_new_account_page_is_reached(client_logged_in: FlaskClient):
         follow_redirects=True,
     )
 
-    print(f"Response status code: {response.data}")
     assert 200 == response.status_code
     assert (
         b"<!--new_account_form this comment is to check that it is reached on test-->"

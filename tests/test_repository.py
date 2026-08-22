@@ -113,7 +113,6 @@ def test_record_new_transaction(repo_with_data: PostgresRepository):
             id=None,
             date=transaction_date,
             description=description,
-            amount=amount,
             lines=[
                 model.TransactionLine(
                     account=petty_cash_account,
