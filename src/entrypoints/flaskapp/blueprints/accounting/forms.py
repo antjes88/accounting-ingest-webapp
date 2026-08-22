@@ -3,7 +3,12 @@ from flask_wtf import FlaskForm
 from wtforms import SelectField, FloatField, StringField, DateField, SubmitField
 from wtforms.validators import DataRequired, optional
 
-from src import model
+from src.dto import (
+    CreateTransactionDTO,
+    CreateAccountDTO,
+    AccountOptionDTO,
+    AccountTypeOptionDTO,
+)
 
 
 class NewTransactionForm(FlaskForm):
@@ -43,7 +48,13 @@ class NewTransactionForm(FlaskForm):
     date = DateField("Date", validators=[DataRequired()], format="%Y-%m-%d")
     submit = SubmitField("Submit")
 
-    def __init__(self, accounts: list[model.Account], *args, **kwargs):
+    def __init__(
+        self,
+        account_options: list[AccountOptionDTO],
+        type_options: list[AccountTypeOptionDTO],
+        *args,
+        **kwargs,
+    ):
         super().__init__(*args, **kwargs)
 
         acc_choices = sorted(
@@ -53,10 +64,10 @@ class NewTransactionForm(FlaskForm):
                     (
                         str(account.id),
                         account.name,
-                        {"data-type": str(account.account_type.id)},
+                        {"data-type": str(account.account_type_id)},
                     )
-                    for account in accounts
-                    if not account.is_father_account
+                    for account in account_options
+                    if account.is_selectable
                 ),
             ],
             key=lambda x: x[1],
@@ -66,7 +77,7 @@ class NewTransactionForm(FlaskForm):
                 ("", "-- Select Account Type --"),
                 *(
                     (str(account_type.id), account_type.display_name)
-                    for account_type in model.AccountType
+                    for account_type in type_options
                 ),
             ],
             key=lambda x: x[-1],
@@ -77,39 +88,15 @@ class NewTransactionForm(FlaskForm):
         self.type_debit.choices = type_choices
         self.type_credit.choices = type_choices
 
-    def to_transaction(self, accounts: list[model.Account]) -> model.Transaction:
+    def to_dto(self) -> CreateTransactionDTO:
 
-        if self.amount.data and self.date.data:
-            return model.Transaction(
-                id=None,
-                date=self.date.data,
-                description=self.description.data,
-                lines=[
-                    model.TransactionLine(
-                        account=self.get_debit_account(accounts),
-                        amount=Decimal(self.amount.data),
-                        entry_type=model.EntryType.DEBIT,
-                    ),
-                    model.TransactionLine(
-                        account=self.get_credit_account(accounts),
-                        amount=Decimal(self.amount.data),
-                        entry_type=model.EntryType.CREDIT,
-                    ),
-                ],
-            )
-        raise ValueError("Amount and Date are required fields")
-
-    def get_debit_account(self, accounts: list[model.Account]) -> model.Account:
-        for account in accounts:
-            if account.id == int(self.account_debit.data):
-                return account
-        raise ValueError("No matching debit account found")
-
-    def get_credit_account(self, accounts: list[model.Account]) -> model.Account:
-        for account in accounts:
-            if account.id == int(self.account_credit.data):
-                return account
-        raise ValueError("No matching credit account found")
+        return CreateTransactionDTO(
+            date=self.date.data,  # type: ignore
+            amount=Decimal(self.amount.data),  # type: ignore
+            debit_account_id=int(self.account_debit.data),
+            credit_account_id=int(self.account_credit.data),
+            description=self.description.data,
+        )
 
 
 class NewAccountForm(FlaskForm):
@@ -140,7 +127,13 @@ class NewAccountForm(FlaskForm):
     )
     submit = SubmitField("Create Account")
 
-    def __init__(self, accounts: list[model.Account], *args, **kwargs):
+    def __init__(
+        self,
+        account_options: list[AccountOptionDTO],
+        type_options: list[AccountTypeOptionDTO],
+        *args,
+        **kwargs,
+    ):
         super().__init__(*args, **kwargs)
 
         self.account_type.choices = sorted(
@@ -148,7 +141,7 @@ class NewAccountForm(FlaskForm):
                 ("", "-- Select Account Type --"),
                 *(
                     (str(account_type.id), account_type.display_name)
-                    for account_type in model.AccountType
+                    for account_type in type_options
                 ),
             ],
             key=lambda x: x[-1],
@@ -160,32 +153,23 @@ class NewAccountForm(FlaskForm):
                     (
                         str(account.id),
                         account.name,
-                        {"data-type": str(account.account_type.id)},
+                        {"data-type": str(account.account_type_id)},
                     )
-                    for account in accounts
+                    for account in account_options
                     if account.is_father_account
                 ),
             ],
             key=lambda x: x[1],
         )
 
-    def to_account(self, accounts: list[model.Account]) -> model.Account:
-        father_acc = None
-        if self.father_account.data:
-            father_acc = next(
-                (
-                    account
-                    for account in accounts
-                    if account.id == int(self.father_account.data)
-                ),
-                None,
-            )
+    def to_dto(self) -> CreateAccountDTO:
 
-        return model.Account(
-            id=None,
-            account_type=model.AccountType.from_id(int(self.account_type.data)),
+        return CreateAccountDTO(
+            account_type_id=int(self.account_type.data),
             name=self.name.data,  # type: ignore
-            father_account=father_acc,
+            father_account_id=(
+                int(self.father_account.data) if self.father_account.data else None
+            ),
             is_physical=self.is_physical.data == "True",
             is_archived=self.is_archived.data == "True",
         )

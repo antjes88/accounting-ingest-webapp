@@ -1,4 +1,4 @@
-from flask import render_template, request
+from flask import render_template
 
 # own files
 from . import home_page

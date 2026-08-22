@@ -1,7 +1,6 @@
 import os
 import pytest
 from typing import Generator
-from flask import Flask
 from flask.testing import FlaskClient
 from src.utils.postgresql_client import PostgresGCPClient
 from src.repository import PostgresRepository
@@ -24,7 +23,7 @@ def postgres_repo(db_conn: PostgresGCPClient) -> PostgresRepository:
     return PostgresRepository(postgres_client=db_conn)
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def repo_with_data(
     postgres_repo: PostgresRepository,
 ) -> Generator[PostgresRepository, None, None]:
@@ -65,7 +64,7 @@ def repo_with_data(
         """)
 
 
-@pytest.fixture(scope="function")  # type: ignore
+@pytest.fixture(scope="function")
 def client() -> Generator[FlaskClient, None, None]:
     server.config["TESTING"] = True
     server.config["WTF_CSRF_ENABLED"] = False
@@ -73,7 +72,7 @@ def client() -> Generator[FlaskClient, None, None]:
         yield client
 
 
-@pytest.fixture(scope="function")  # type: ignore
+@pytest.fixture(scope="function")
 def client_logged_in(client: FlaskClient) -> Generator[FlaskClient, None, None]:
     client.post(
         "/login",

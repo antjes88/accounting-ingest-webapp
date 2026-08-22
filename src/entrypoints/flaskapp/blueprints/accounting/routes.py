@@ -24,14 +24,15 @@ def new_transaction():
                 port=5432,
             )
         )
-        accounts = repo.get_accounts()
+        account_options = services.get_account_options(repo)
+        type_options = services.get_account_type_options()
 
-        form = NewTransactionForm(accounts)
+        form = NewTransactionForm(account_options, type_options)
 
         if (form.validate_on_submit()) & (request.method == "POST"):
             services.record_new_transaction(
                 repo=repo,
-                transaction=form.to_transaction(accounts),
+                transaction_dto=form.to_dto(),
             )
 
             flash("Transaction recorded successfully!", "success")
@@ -54,12 +55,16 @@ def new_account():
                 port=5432,
             )
         )
-        accounts = repo.get_accounts()
+        account_options = services.get_account_options(repo)
+        type_options = services.get_account_type_options()
 
-        form = NewAccountForm(accounts)
+        form = NewAccountForm(account_options, type_options)
 
         if (form.validate_on_submit()) & (request.method == "POST"):
-            services.record_new_account(repo=repo, account=form.to_account(accounts))
+            services.record_new_account(
+                repo=repo,
+                account_dto=form.to_dto(),
+            )
 
             flash("Account created successfully!", "success")
     except Exception as message:
