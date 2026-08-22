@@ -7,7 +7,8 @@ from wtforms.validators import DataRequired, optional
 from src.dto import (
     CreateTransactionDTO,
     CreateAccountDTO,
-    AccountOptionDTO,
+    PostableAccountOptionDTO,
+    ParentAccountOptionDTO,
     AccountTypeOptionDTO,
 )
 
@@ -51,7 +52,7 @@ class NewTransactionForm(FlaskForm):
 
     def __init__(
         self,
-        account_options: list[AccountOptionDTO],
+        account_options: list[PostableAccountOptionDTO],
         type_options: list[AccountTypeOptionDTO],
         *args: Any,
         **kwargs: Any,
@@ -68,7 +69,6 @@ class NewTransactionForm(FlaskForm):
                         {"data-type": str(account.account_type_id)},
                     )
                     for account in account_options
-                    if account.is_selectable
                 ),
             ],
             key=lambda x: x[1],
@@ -130,7 +130,7 @@ class NewAccountForm(FlaskForm):
 
     def __init__(
         self,
-        account_options: list[AccountOptionDTO],
+        parent_account_options: list[ParentAccountOptionDTO],
         type_options: list[AccountTypeOptionDTO],
         *args: Any,
         **kwargs: Any,
@@ -156,8 +156,7 @@ class NewAccountForm(FlaskForm):
                         account.name,
                         {"data-type": str(account.account_type_id)},
                     )
-                    for account in account_options
-                    if account.is_father_account
+                    for account in parent_account_options
                 ),
             ],
             key=lambda x: x[1],
