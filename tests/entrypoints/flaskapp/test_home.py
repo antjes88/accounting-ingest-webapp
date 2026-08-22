@@ -1,10 +1,4 @@
-import os
-from flask import url_for
 from flask.testing import FlaskClient
-import pytest
-
-from src.entrypoints.flaskapp.app import server
-from tests.helpers.flask_helpers import get_protected_routes
 
 
 def test_home_page_is_reached(client_logged_in: FlaskClient):
