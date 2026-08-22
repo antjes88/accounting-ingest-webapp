@@ -51,6 +51,7 @@ class PostgresRepository(AbstractRepository):
     def get_accounts(self) -> List[model.Account]:
 
         accounts = {}
+        father_accounts = {}
 
         father_rows = self.postgres_client.query(
             sql_queries.SELECT_FATHER_ACCOUNTS.format(
@@ -66,7 +67,7 @@ class PostgresRepository(AbstractRepository):
                 is_physical=row[4],
                 is_archived=row[5],
             )
-            accounts[account.id] = account
+            father_accounts[account.id] = account
 
         children_rows = self.postgres_client.query(
             sql_queries.SELECT_CHILDREN_ACCOUNTS.format(
@@ -74,7 +75,6 @@ class PostgresRepository(AbstractRepository):
                 account_types_table=self.account_types_table,
             )
         )
-
         for row in children_rows:
             account = model.Account(
                 id=row[0],
@@ -82,15 +82,11 @@ class PostgresRepository(AbstractRepository):
                 name=row[3],
                 is_physical=row[4],
                 is_archived=row[5],
+                father_account=father_accounts.get(row[6]),
             )
             accounts[account.id] = account
 
-        for row in children_rows:
-            father_id = row[6]
-            if father_id in accounts:
-                accounts[row[0]].father_account = accounts[father_id]
-
-        return list(accounts.values())
+        return list({**accounts, **father_accounts}.values())
 
     def get_max_transaction_id(self) -> int:
 
