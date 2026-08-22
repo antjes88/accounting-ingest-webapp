@@ -4,7 +4,6 @@ import warnings
 
 from src.entrypoints.cli.dummy import dummy
 
-
 warnings.filterwarnings("ignore", category=UserWarning)
 
 

@@ -1,20 +1,24 @@
 # Accounting-ingest-webapp
 
-This repository is a web-based personal accounting application built with Python and Flask that allows the user to securely log in and ingest financial transactions. At its core, it implements a double-entry bookkeeping system where the user can record transactions by specifying a debit account, a credit account, an amount, and a description. The backend uses a Clean Architecture approach with a Repository pattern to interact with a PostgreSQL database, ensuring that business logic is kept independent of infrastructure. Furthermore, the repository is highly structured for continuous integration and deployment, featuring a comprehensive pytest suite for automated testing, a Dockerized development environment, and GitHub Actions pipelines that handle both testing and Terraform-based infrastructure deployment to Google Cloud Platform.
+This repository is a web-based personal accounting application built with Python and Flask that allows users to securely log in, manage their chart of accounts, and ingest financial transactions. At its core, it implements a double-entry bookkeeping system where users can record transactions by specifying a debit account, a credit account, an amount, and a description. It also supports hierarchical chart-of-accounts management (parent and sub-accounts categorized by type, physical status, and archive state).
+
+The backend uses a **Clean / Onion Architecture** approach combined with the **Repository pattern** and dedicated **Data Transfer Objects (DTOs)**, ensuring complete decoupling between presentation (Flask/WTForms), domain business rules, and PostgreSQL persistence infrastructure. Furthermore, the repository is highly structured for continuous integration and deployment, featuring strict static typing, a comprehensive pytest suite for automated testing with Gherkin-style documentation, a Dockerized development container, and GitHub Actions pipelines that handle both testing and Terraform-based infrastructure deployment to Google Cloud Platform.
 
 The Terraform configuration automates the deployment of the Accounting Ingest Web App infrastructure on Google Cloud Platform, consisting of a serverless compute layer and a managed relational database. It provisions a Google Cloud Run service configured with Identity-Aware Proxy (IAP) to securely expose the containerized application, securely retrieving sensitive environment variables directly from Google Secret Manager. For the database layer, it deploys a Google Cloud SQL instance running PostgreSQL 18 featuring automated backups, point-in-time recovery, and private networking configurations. The Cloud Run service connects to this database seamlessly via a Cloud SQL volume mount, and IAM policies are configured to restrict application access exclusively to authorized users.
 
 ## Features
 
-- **Development Environment**: Pre-configured development container for consistent setup.
-- **Comprehensive Testing**: Includes pre-configured unit tests and integration tests to ensure code reliability, along with test coverage reporting.
-- **Pipeline Integration**: Automated pipelines to unit test python solution.
-- **Clean Architecture**: Designed using Onion/Clean Architecture principles and the Repository pattern to decouple business logic from infrastructure.
+- **Double-Entry Bookkeeping**: Enforces balanced debit and credit transactions across asset, liability, equity, revenue, and expense accounts.
+- **Account Hierarchy Management**: Supports parent and sub-account relationships with domain-level validation against invalid nesting and cyclic hierarchies.
+- **Clean Architecture & DTOs**: Strict separation of concerns using Command and Query Data Transfer Objects (`src/dto.py`) to isolate Flask web forms from domain models.
+- **Comprehensive Testing**: Includes automated unit tests and integration tests with pytest, fixture isolation, Gherkin-style documentation, and test coverage reporting.
+- **Development Environment**: Pre-configured VS Code Dev Containers for consistent local development and debugging.
+- **Pipeline Integration**: Automated CI/CD pipelines via GitHub Actions to validate, lint, and unit test the Python solution.
 - **Infrastructure as Code (IaC)**: Automated infrastructure deployment to Google Cloud Platform (GCP) managed via Terraform.
 
 ## Development environment
 
-Recommended development enviroment is VSCode Dev Containers extension. The configuration and set up of this dev container is already defined in `.devcontainer/devcontainer.json` so setting up a new containerised dev environment on your machine is straight-forward.
+Recommended development environment is VSCode Dev Containers extension. The configuration and set up of this dev container is already defined in `.devcontainer/devcontainer.json` so setting up a new containerised dev environment on your machine is straight-forward.
 
 Pre-requisites:
 - docker installed on your machine and available on your `PATH`
@@ -22,7 +26,7 @@ Pre-requisites:
 - [Dev Containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) vscode extension installed
 
 Steps:
-- In VSCode go to `View -> Command Pallet` and search for the command `>Dev Containers: Rebuild and Reopen in Container`
+- In VSCode go to `View -> Command Palette` and search for the command `>Dev Containers: Rebuild and Reopen in Container`
 
 The first time you open the workspace within the container it'll take a few minutes to build the container, setup the virtual env and then login to gcloud. At the end of this process you will be presented with a url and asked to provide an authorization. Simply follow the url, permit the access and copy the auth code provided at the end back into to the terminal and press enter. 
 
@@ -84,7 +88,7 @@ flask run
 ```
 
 When run in this mode, the server will automatically restart whenever a file is saved, allowing for seamless testing and development.
-To fully integrate the authetication process, you also need to provide a .env file with the following variables:
+To fully integrate the authentication process, you also need to provide a .env file with the following variables:
 
 ```ini
 USERNAME={web username}
@@ -107,33 +111,31 @@ print(generate_password_hash("yourpassword"))
 
 ## Component Diagram
 
-The code architecture of the Python solution is illustrated below. We adopt Onion/Clean Architecture, so ensuring that our Business Logic (Domain Model) has no dependencies. Our goal is to follow SOLID principles, promoting seamless future changes and enhancing code clarity.
+The code architecture of the Python solution is illustrated below. We adopt Onion/Clean Architecture, ensuring that our Business Logic (Domain Model) has no external dependencies. Our goal is to follow SOLID principles, promoting seamless future changes and enhancing code clarity.
 
 The `src/entrypoints/flaskapp/app.py` file is used by the deployed solution as entrypoint. Nonetheless, several entry points could be provided seamlessly because, following Clean Architecture principles, the `main.py` function is treated as the last detail. This ensures that none of the core solution code depends on the entry point; instead, the entry point depends on the core solution code. This design promotes flexibility and allows for the easy addition of new entry points without impacting the existing architecture. Which, in turn, means that the source is independent of the infrastructure. 
 
-The Python entrypoint invokes one of the services found in `src/services.py`. These services receives objects of the clients for the repositories as parameters.
-
-The services handle the execution by calling methods found in the Domain and Adapters to ensure the successful completion of the process.
+The Python entrypoint invokes one of the services found in `src/services.py` using specialized **Data Transfer Objects (DTOs)** defined in `src/dto.py`. The services coordinate execution between the Domain Model (`src/model.py`) and the Repositories (`src/repository.py`) to ensure data integrity and persistence.
 
 <p align="center">
     <img src="docs/images/components_diagram.png" alt="Components Diagram">
 </p>
 
-The client for data storage have been implemented following the Repository pattern. This design pattern abstracts the logic for retrieving and storing data, providing a higher-level interface to the rest of the application. By doing so, it enables the implementation of the Dependency Inversion Principle (DIP). This approach allows our Database Layer (Adapters) to depend on the Domain Model, rather than the other way around. This, in turn, facilitates the seamless use of the same Business Logic/Domain Model in another scenario with a different Infrastructure/Data Layer. Related code can be found on `src/repository.py`.
+The clients for data storage have been implemented following the Repository pattern. This data access pattern abstracts the logic for retrieving and storing data, providing a higher-level interface to the rest of the application. By doing so, it enables the implementation of the Dependency Inversion Principle (DIP). This approach allows our Database Layer (Adapters) to depend on the Domain Model, rather than the other way around. This, in turn, facilitates the seamless use of the same Business Logic/Domain Model in another scenario with a different Infrastructure/Data Layer. Related code can be found in `src/repository.py`.
 
 <p align="center">
     <img src="docs/images/adapters_diagram.png" alt="Adapters Diagram">
 </p>
 
-In the picture above you can also find the Domain Model diagram representing the code found in `src/model` folder.
+In the picture above you can also find the Domain Model diagram representing the code found in `src/model.py`.
 
 
 ## CI/CD - Pipeline Integration
 There are 2 CI/CD pipelines implemented as GitHub Actions:
 
-1. **Pytest**: This pipeline is defined in the `.github/workflows/pytest.yaml` file. It is triggered on every pull request, what runs unit tests using `pytest`. It also generates a test coverage report to ensure code quality. If any test fails, the pipeline will block the merge process, ensuring that only reliable code is integrated into the main branch. Finally, the pipeline requiress a pytest coverage over a given threshold. A Service Account granted with role `roles/cloudsql.client` is required. Current workflow, `.github/workflows/pytest.yaml`, is set to access GCP Project through Workload Identity Provider.
+1. **Pytest**: This pipeline is defined in the `.github/workflows/pytest.yaml` file. It is triggered on every pull request, running unit and integration tests using `pytest`. It also generates a test coverage report to ensure code quality. If any test fails, the pipeline will block the merge process, ensuring that only reliable code is integrated into the main branch. Finally, the pipeline requires a pytest coverage over a given threshold. A Service Account granted with role `roles/cloudsql.client` is required. Current workflow, `.github/workflows/pytest.yaml`, is set to access GCP Project through Workload Identity Provider.
 
-2. **Deployment**: The deployment process is managed through two GitHub Actions workflows. The first workflow, `.github/workflows/terraform-validate.yaml`, validates the Terraform code and generates a deployment plan during a pull request, blocking merge in case of failures. The second workflow, `.github/workflows/terraform-apply.yaml`, executes after a merge to deploy the changes to Google Cloud Platform (GCP).
+2. **Deployment**: The deployment process is managed through two GitHub Actions workflows. The first workflow, `.github/workflows/terraform-validate.yaml`, validates the Terraform code during a pull request, blocking merge in case of failures. The second workflow, `.github/workflows/terraform-apply.yaml`, executes after a merge to deploy the changes to Google Cloud Platform (GCP).
 
 ## Deployment implementation
 
@@ -150,7 +152,7 @@ The Terraform code automates the deployment process by managing the following co
 
 Before the Terraform code can be executed, ensure the following:
 
-1. **Cloud Function Service Account**:
+1. **Cloud Run Service Account**:
     - Provide a Service Account for the Cloud Run Service with the following roles:
       - roles/secretmanager.secretAccessor
       - roles/cloudsql.client
@@ -175,7 +177,7 @@ To reuse the GitHub Action, follow these steps:
    - Set the Service Account as the principal for the Workload Identity Provider created in step 1.
 
 3. **Provide secrets:**
-    - `WORKLOAD_IDENTITY_PROVIDER` & `SERVICE_ACCOUNT_EMAIL` must be provided as Github Actions Secrets.
+   - `WORKLOAD_IDENTITY_PROVIDER` & `SERVICE_ACCOUNT_EMAIL` must be provided as Github Actions Secrets.
 
 
 ### Considerations

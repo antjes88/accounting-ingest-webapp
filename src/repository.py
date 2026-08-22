@@ -50,8 +50,8 @@ class PostgresRepository(AbstractRepository):
 
     def get_accounts(self) -> List[model.Account]:
 
-        accounts = {}
-        father_accounts = {}
+        accounts: dict[int, model.Account] = {}
+        father_accounts: dict[int, model.Account] = {}
 
         father_rows = self.postgres_client.query(
             sql_queries.SELECT_FATHER_ACCOUNTS.format(
@@ -67,7 +67,7 @@ class PostgresRepository(AbstractRepository):
                 is_physical=row[4],
                 is_archived=row[5],
             )
-            father_accounts[account.id] = account
+            father_accounts[account.id] = account  # type: ignore
 
         children_rows = self.postgres_client.query(
             sql_queries.SELECT_CHILDREN_ACCOUNTS.format(
@@ -84,7 +84,7 @@ class PostgresRepository(AbstractRepository):
                 is_archived=row[5],
                 father_account=father_accounts.get(row[6]),
             )
-            accounts[account.id] = account
+            accounts[account.id] = account  # type: ignore
 
         return list({**accounts, **father_accounts}.values())
 

@@ -1,4 +1,5 @@
 from decimal import Decimal
+from typing import Any
 from flask_wtf import FlaskForm
 from wtforms import SelectField, FloatField, StringField, DateField, SubmitField
 from wtforms.validators import DataRequired, optional
@@ -52,9 +53,9 @@ class NewTransactionForm(FlaskForm):
         self,
         account_options: list[AccountOptionDTO],
         type_options: list[AccountTypeOptionDTO],
-        *args,
-        **kwargs,
-    ):
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
         super().__init__(*args, **kwargs)
 
         acc_choices = sorted(
@@ -131,9 +132,9 @@ class NewAccountForm(FlaskForm):
         self,
         account_options: list[AccountOptionDTO],
         type_options: list[AccountTypeOptionDTO],
-        *args,
-        **kwargs,
-    ):
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
         super().__init__(*args, **kwargs)
 
         self.account_type.choices = sorted(
