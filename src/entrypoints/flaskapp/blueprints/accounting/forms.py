@@ -84,7 +84,6 @@ class NewTransactionForm(FlaskForm):
                 id=None,
                 date=self.date.data,
                 description=self.description.data,
-                amount=Decimal(self.amount.data),
                 lines=[
                     model.TransactionLine(
                         account=self.get_debit_account(accounts),

@@ -57,9 +57,6 @@ def new_account():
         accounts = repo.get_accounts()
 
         form = NewAccountForm(accounts)
-        print(
-            f"Is physical: {form.is_physical.data}"
-        )  # TODO: Remove this debug print statement in production
 
         if (form.validate_on_submit()) & (request.method == "POST"):
             services.record_new_account(repo=repo, account=form.to_account(accounts))

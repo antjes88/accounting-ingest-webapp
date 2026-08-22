@@ -31,8 +31,6 @@ def test_all_routes_redirect_to_login_if_not_logged_in(client: FlaskClient, rule
 
     response = client.get(rule, follow_redirects=False)
 
-    print(f"Testing route: {rule} - Status Code: {response.status_code}")
-
     assert response.status_code == 302, f"Error in {rule}: should redirect."
 
 

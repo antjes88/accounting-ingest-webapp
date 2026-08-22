@@ -41,7 +41,18 @@ def test_execute(execute_create_table: PostgresGCPClient):
         (2, "Toyota", False, dt.date(2020, 2, 2)),
     ]
 
-    print("Actual data:", actual_data)
+    assert actual_data == expected_data
+
+
+def test_query_with_params(execute_create_table: PostgresGCPClient):
+    statement = "SELECT * FROM test.simple WHERE Id = %s AND Activated = %s;"
+    params = (1, True)
+    actual_data = execute_create_table.query(statement, params=params)
+
+    expected_data = [
+        (1, "Mercedes", True, dt.date(2020, 1, 1)),
+    ]
+
     assert actual_data == expected_data
 
 
