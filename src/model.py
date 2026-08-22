@@ -50,32 +50,71 @@ class EntryType(Enum):
         return self._display_name
 
 
-@dataclass
 class Account:
-    id: Optional[int]
-    account_type: AccountType
-    name: str
-    father_account: Optional[Account] = None
-    is_physical: bool = True
-    is_archived: bool = False
+    def __init__(
+        self,
+        id: Optional[int],
+        account_type: AccountType,
+        name: str,
+        father_account: Optional[Account] = None,
+        is_physical: bool = True,
+        is_archived: bool = False,
+    ):
+        self._id = id
+        self._account_type = account_type
+        self._name = name
+        self._father_account = father_account
+        self._is_physical = is_physical
+        self._is_archived = is_archived
 
-    def __str__(self):
-        return f"Account name: {self.name}"
+        self._validate_integrity()
 
-    def __post_init__(self):
-        if self.father_account is not None:
-            if self.father_account.father_account is not None:
+    def _validate_integrity(self):
+        if self._father_account is not None:
+            if self._father_account.father_account is not None:
                 raise ValueError(
-                    f"Invalid hierarchy: Account '{self.father_account.name}' is already "
+                    f"Invalid hierarchy: Account '{self._father_account.name}' is already "
                     "a child account and cannot be assigned as a father account."
                 )
 
+    def __eq__(self, other):
+        if not isinstance(other, Account) or self._id is None or other._id is None:
+            return self is other
+        return self._id == other._id
+
+    def __hash__(self):
+        return hash(self._id) if self._id else id(self)
+
+    def __str__(self):
+        return f"Account name: {self._name}"
+
     @property
-    def is_father_account(self):
-        if self.father_account:
-            return False
-        else:
-            return True
+    def id(self) -> Optional[int]:
+        return self._id
+
+    @property
+    def account_type(self) -> AccountType:
+        return self._account_type
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    @property
+    def father_account(self) -> Optional[Account]:
+        return self._father_account
+
+    @property
+    def is_physical(self) -> bool:
+        return self._is_physical
+
+    @property
+    def is_archived(self) -> bool:
+        return self._is_archived
+
+    @property
+    def is_father_account(self) -> bool:
+        return self._father_account is None
 
 
 @dataclass(frozen=True)
