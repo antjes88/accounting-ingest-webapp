@@ -2,7 +2,7 @@ import os
 
 from src import model
 
-web_credentials = {
+web_credentials: dict[str, str] = {
     "username": os.environ["USERNAME"],
     "password": os.environ["PASSWORD"],
 }

@@ -5,7 +5,6 @@ from decimal import Decimal
 
 from src.model import Account, AccountType, EntryType, Transaction, TransactionLine
 
-# Common test data
 father_account = Account(
     id=111,
     account_type=AccountType.ASSET,
@@ -191,7 +190,7 @@ def test_transaction_get_credit_account_ids():
         "vs_none",
     ],
 )
-def test_transaction_equality(tx_a, tx_b, expected_equal: bool):
+def test_transaction_equality(tx_a: Transaction, tx_b: object, expected_equal: bool):
     """
     GIVEN two objects (at least one Transaction)
     WHEN evaluated for equality (__eq__)
@@ -217,7 +216,9 @@ def test_transaction_equality(tx_a, tx_b, expected_equal: bool):
         "defined_id_vs_none_id_different_hash",
     ],
 )
-def test_transaction_hash(tx_a, tx_b, should_hash_equal: bool, expected_set_len: int):
+def test_transaction_hash(
+    tx_a: Transaction, tx_b: Transaction, should_hash_equal: bool, expected_set_len: int
+):
     """
     GIVEN two Transaction objects
     WHEN hash() is called and objects are added to a set

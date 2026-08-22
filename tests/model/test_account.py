@@ -59,9 +59,6 @@ def test_account_raises_value_error_for_incorrect_hierarchy():
         )
 
 
-# Common Account fixtures for equality and hash tests
-
-
 @pytest.mark.parametrize(
     "acc_a,acc_b,expected_equal",
     [
@@ -85,7 +82,7 @@ def test_account_raises_value_error_for_incorrect_hierarchy():
         "vs_none",
     ],
 )
-def test_account_equality(acc_a, acc_b, expected_equal: bool):
+def test_account_equality(acc_a: Account, acc_b: object, expected_equal: bool):
     """
     GIVEN two objects (at least one Account)
     WHEN evaluated for equality (__eq__)
@@ -111,7 +108,9 @@ def test_account_equality(acc_a, acc_b, expected_equal: bool):
         "defined_id_vs_none_id_different_hash",
     ],
 )
-def test_account_hash(acc_a, acc_b, should_hash_equal: bool, expected_set_len: int):
+def test_account_hash(
+    acc_a: Account, acc_b: Account, should_hash_equal: bool, expected_set_len: int
+):
     """
     GIVEN two Account objects
     WHEN hash() is called and objects are added to a set
