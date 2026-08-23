@@ -29,10 +29,15 @@ class AccountTypeOptionDTO:
 
 
 @dataclass(frozen=True)
-class AccountOptionDTO:
+class PostableAccountOptionDTO:
     id: int
     name: str
     account_type_id: int
     account_type_name: str
-    is_selectable: bool
-    is_father_account: bool
+
+
+@dataclass(frozen=True)
+class ParentAccountOptionDTO:
+    id: int
+    name: str
+    account_type_id: int

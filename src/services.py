@@ -2,7 +2,8 @@ from src import repository, model
 from src.dto import (
     CreateTransactionDTO,
     CreateAccountDTO,
-    AccountOptionDTO,
+    PostableAccountOptionDTO,
+    ParentAccountOptionDTO,
     AccountTypeOptionDTO,
 )
 
@@ -75,20 +76,34 @@ def record_new_account(
     repo.post_new_account(account)
 
 
-def get_account_options(
+def get_postable_account_options(
     repo: repository.AbstractRepository,
-) -> list[AccountOptionDTO]:
+) -> list[PostableAccountOptionDTO]:
     accounts = repo.get_accounts()
     return [
-        AccountOptionDTO(
+        PostableAccountOptionDTO(
             id=acc.id,  # type: ignore
             name=acc.name,
             account_type_id=acc.account_type.id,
             account_type_name=acc.account_type.display_name,
-            is_selectable=not acc.is_father_account,
-            is_father_account=acc.is_father_account,
         )
         for acc in accounts
+        if not acc.is_father_account and not acc.is_archived
+    ]
+
+
+def get_parent_account_options(
+    repo: repository.AbstractRepository,
+) -> list[ParentAccountOptionDTO]:
+    accounts = repo.get_accounts()
+    return [
+        ParentAccountOptionDTO(
+            id=acc.id,  # type: ignore
+            name=acc.name,
+            account_type_id=acc.account_type.id,
+        )
+        for acc in accounts
+        if acc.is_father_account and not acc.is_archived
     ]
 
 

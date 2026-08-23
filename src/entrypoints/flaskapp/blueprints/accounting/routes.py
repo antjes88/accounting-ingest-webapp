@@ -27,10 +27,10 @@ def _get_repository() -> PostgresRepository:
 @accounting_pages.route("/new_transaction", methods=["GET", "POST"])
 def new_transaction():
     repo = _get_repository()
-    account_options = services.get_account_options(repo)
+    postable_accounts = services.get_postable_account_options(repo)
     type_options = services.get_account_type_options()
 
-    form = NewTransactionForm(account_options, type_options)
+    form = NewTransactionForm(postable_accounts, type_options)
 
     if form.validate_on_submit():
 
@@ -59,10 +59,10 @@ def new_transaction():
 @accounting_pages.route("/new_account", methods=["GET", "POST"])
 def new_account():
     repo = _get_repository()
-    account_options = services.get_account_options(repo)
+    parent_accounts = services.get_parent_account_options(repo)
     type_options = services.get_account_type_options()
 
-    form = NewAccountForm(account_options, type_options)
+    form = NewAccountForm(parent_accounts, type_options)
 
     if form.validate_on_submit():
 

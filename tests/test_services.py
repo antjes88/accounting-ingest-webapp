@@ -7,13 +7,15 @@ from src.repository import PostgresRepository
 from src.services import (
     record_new_transaction,
     record_new_account,
-    get_account_options,
+    get_postable_account_options,
+    get_parent_account_options,
     get_account_type_options,
 )
 from src.dto import (
     CreateTransactionDTO,
     CreateAccountDTO,
-    AccountOptionDTO,
+    PostableAccountOptionDTO,
+    ParentAccountOptionDTO,
     AccountTypeOptionDTO,
 )
 from src import model
@@ -135,25 +137,45 @@ def test_record_new_account_raises_value_error_when_father_account_not_found(
         record_new_account(repo_with_data, dto)
 
 
-def test_get_account_options(repo_with_data: PostgresRepository):
+def test_get_postable_account_options(repo_with_data: PostgresRepository) -> None:
     """
-    GIVEN a PostgresRepository with populated sample accounts
-    WHEN get_account_options service is called
-    THEN it should return AccountOptionDTOs with correct properties and selectable status.
+    GIVEN a PostgresRepository with sample accounts
+    WHEN get_postable_account_options service is called
+    THEN it should return only non-father, non-archived accounts as PostableAccountOptionDTOs.
     """
-    options = get_account_options(repo_with_data)
-    cash_opt = next(opt for opt in options if opt.id == 1)
-    petty_opt = next(opt for opt in options if opt.id == 2)
+    options = get_postable_account_options(repo_with_data)
+    petty_opt = next((opt for opt in options if opt.id == 2), None)
+    base_salary_opt = next((opt for opt in options if opt.id == 4), None)
 
-    assert len(options) == 5
-    assert all(isinstance(opt, AccountOptionDTO) for opt in options)
+    # In sample data: Petty Cash (id=2) and Base Salary (id=4) are non-father & non-archived
+    assert len(options) == 2
+    assert all(isinstance(opt, PostableAccountOptionDTO) for opt in options)
+    assert petty_opt is not None
+    assert petty_opt.name == "Petty Cash"
+    assert petty_opt.account_type_id == model.AccountType.ASSET.id
+    assert petty_opt.account_type_name == "Asset"
+    assert base_salary_opt is not None
+    assert base_salary_opt.name == "Base Salary"
+
+
+def test_get_parent_account_options(repo_with_data: PostgresRepository) -> None:
+    """
+    GIVEN a PostgresRepository with sample accounts
+    WHEN get_parent_account_options service is called
+    THEN it should return only father, non-archived accounts as ParentAccountOptionDTOs.
+    """
+    options = get_parent_account_options(repo_with_data)
+    cash_opt = next((opt for opt in options if opt.id == 1), None)
+    work_income_opt = next((opt for opt in options if opt.id == 3), None)
+
+    # In sample data: Cash (id=1) and Work Income (id=3) are father & non-archived
+    assert len(options) == 2
+    assert all(isinstance(opt, ParentAccountOptionDTO) for opt in options)
+    assert cash_opt is not None
     assert cash_opt.name == "Cash"
     assert cash_opt.account_type_id == model.AccountType.ASSET.id
-    assert cash_opt.is_selectable is False
-    assert cash_opt.is_father_account is True
-    assert petty_opt.name == "Petty Cash"
-    assert petty_opt.is_selectable is True
-    assert petty_opt.is_father_account is False
+    assert work_income_opt is not None
+    assert work_income_opt.name == "Work Income"
 
 
 def test_get_account_type_options():
