@@ -62,21 +62,23 @@ def test_sql_table_str():
     assert str(table) == "test_schema.test_table"
 
 
-def test_get_accounts(repo_with_data: PostgresRepository):
+def test_get_chart_of_accounts(repo_with_data: PostgresRepository):
     """
     GIVEN a PostgresRepository initialized with sample account data
-    WHEN the get_accounts method is called
-    THEN it should return a list of all accounts,
+    WHEN the get_chart_of_accounts method is called
+    THEN it should return a ChartOfAccounts instance containing all accounts,
     and specific accounts should match the expected sample data.
     """
-    accounts = repo_with_data.get_accounts()
+    chart = repo_with_data.get_chart_of_accounts()
 
-    assert len(accounts) == 5
-    assert next((acc for acc in accounts if acc.id == 1), None) == cash_account
-    assert next((acc for acc in accounts if acc.id == 2), None) == petty_cash_account
-    assert next((acc for acc in accounts if acc.id == 3), None) == work_income_account
-    assert next((acc for acc in accounts if acc.id == 4), None) == base_salary_account
-    assert next((acc for acc in accounts if acc.id == 5), None) == archived_account
+    assert isinstance(chart, model.ChartOfAccounts)
+    assert len(chart.accounts) == 5
+    assert cash_account in chart.accounts
+    assert petty_cash_account in chart.accounts
+    assert work_income_account in chart.accounts
+    assert base_salary_account in chart.accounts
+    assert archived_account in chart.accounts
+    assert chart.get_account_by_id(cash_account.id) == cash_account  # type: ignore
 
 
 def test_get_max_transaction_id(repo_with_data: PostgresRepository):

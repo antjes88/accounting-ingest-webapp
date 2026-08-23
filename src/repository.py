@@ -10,7 +10,7 @@ from src.utils import sql_queries
 class AbstractRepository(ABC):
 
     @abstractmethod
-    def get_accounts(self) -> List[model.Account]:
+    def get_chart_of_accounts(self) -> model.ChartOfAccounts:
         raise NotImplementedError
 
     @abstractmethod
@@ -48,7 +48,7 @@ class PostgresRepository(AbstractRepository):
     def __init__(self, postgres_client: PostgresGCPClient):
         self.postgres_client = postgres_client
 
-    def get_accounts(self) -> List[model.Account]:
+    def _load_accounts(self) -> List[model.Account]:
 
         accounts: dict[int, model.Account] = {}
         father_accounts: dict[int, model.Account] = {}
@@ -87,6 +87,9 @@ class PostgresRepository(AbstractRepository):
             accounts[account.id] = account  # type: ignore
 
         return list({**accounts, **father_accounts}.values())
+
+    def get_chart_of_accounts(self) -> model.ChartOfAccounts:
+        return model.ChartOfAccounts(self._load_accounts())
 
     def get_max_transaction_id(self) -> int:
 

@@ -207,3 +207,82 @@ class Transaction:
     @property
     def description(self) -> Optional[str]:
         return self._description
+
+
+class ChartOfAccounts:
+    def __init__(self, accounts: Optional[List[Account]] = None):
+        self._accounts: List[Account] = []
+        if accounts:
+            for acc in accounts:
+                self._validate_unique_name(acc.name)
+                self._accounts.append(acc)
+
+    def _validate_unique_name(self, name: str) -> None:
+        name_normalized = name.strip().lower()
+        if any(acc.name.strip().lower() == name_normalized for acc in self._accounts):
+            raise ValueError(f"Account with name '{name}' already exists.")
+
+    @property
+    def accounts(self) -> List[Account]:
+        return list(self._accounts)
+
+    @property
+    def postable_accounts(self) -> List[Account]:
+        return [
+            acc
+            for acc in self._accounts
+            if not acc.is_father_account and not acc.is_archived
+        ]
+
+    @property
+    def parent_accounts(self) -> List[Account]:
+        return [
+            acc
+            for acc in self._accounts
+            if acc.is_father_account and not acc.is_archived
+        ]
+
+    def get_account_by_id(self, account_id: int) -> Account:
+        for acc in self._accounts:
+            if acc.id == account_id:
+                return acc
+        raise ValueError(f"Account with ID {account_id} not found.")
+
+    def get_account_by_name(self, name: str) -> Optional[Account]:
+        name_normalized = name.strip().lower()
+        for acc in self._accounts:
+            if acc.name.strip().lower() == name_normalized:
+                return acc
+        return None
+
+    def create_account(
+        self,
+        name: str,
+        account_type: AccountType,
+        father_account_id: Optional[int] = None,
+        is_physical: bool = True,
+        is_archived: bool = False,
+    ) -> Account:
+        self._validate_unique_name(name)
+
+        if father_account_id is not None:
+            try:
+                father_account = self.get_account_by_id(father_account_id)
+            except ValueError:
+                raise ValueError(
+                    f"Father account with ID {father_account_id} not found."
+                )
+        else:
+            father_account = None
+
+        new_account = Account(
+            id=None,
+            account_type=account_type,
+            name=name,
+            father_account=father_account,
+            is_physical=is_physical,
+            is_archived=is_archived,
+        )
+        self._accounts.append(new_account)
+
+        return new_account
