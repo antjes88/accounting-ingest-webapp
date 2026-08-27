@@ -7,7 +7,12 @@ from src.repository import PostgresRepository
 from src import services
 
 from . import accounting_pages
-from .forms import NewTransactionForm, NewAccountForm, TransactionFilterForm
+from .forms import (
+    NewTransactionForm,
+    NewAccountForm,
+    TransactionFilterForm,
+    DeleteTransactionForm,
+)
 
 logger = default_module_logger(__file__)
 
@@ -92,6 +97,7 @@ def list_transactions():
     repo = _get_repository()
 
     form = TransactionFilterForm(formdata=request.args, meta={"csrf": False})
+    delete_form = DeleteTransactionForm()
     filter_dto = form.to_dto()
     if request.args:
         if form.validate():
@@ -105,4 +111,38 @@ def list_transactions():
         flash("An unexpected error occurred while loading transactions.", "error")
         transactions = []
 
-    return render_template("transactions.html", transactions=transactions, form=form)
+    return render_template(
+        "transactions.html",
+        transactions=transactions,
+        form=form,
+        delete_form=delete_form,
+    )
+
+
+@accounting_pages.route("/delete_transaction", methods=["POST"])
+def delete_transaction():
+    repo = _get_repository()
+    form = DeleteTransactionForm()
+
+    if form.validate_on_submit():
+        try:
+            services.delete_transaction(
+                repo=repo,
+                transaction_dto=form.to_dto(),
+            )
+            flash("Transaction deleted successfully!", "success")
+
+        except ValueError as err:
+            logger.warning(f"Validation error deleting transaction: {err}")
+            flash(f"Error deleting transaction: {err}", "warning")
+
+        except Exception:
+            logger.exception("Unexpected error deleting transaction")
+            flash(
+                "An unexpected error occurred while deleting the transaction.", "error"
+            )
+
+    else:
+        flash("Invalid transaction selection.", "warning")
+
+    return redirect(url_for("accounting_pages.list_transactions"))

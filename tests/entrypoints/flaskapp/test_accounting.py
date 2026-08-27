@@ -2,11 +2,14 @@ from flask.testing import FlaskClient
 import pytest
 import datetime as dt
 from decimal import Decimal
-from typing import Optional
+from typing import Optional, Any
 from unittest.mock import patch
 
 from repository import PostgresRepository
 from src import model
+from src.dto import DeleteTransactionDTO
+from src.entrypoints.flaskapp.app import server
+from src.entrypoints.flaskapp.blueprints.accounting.forms import DeleteTransactionForm
 from tests.helpers.sample_data import cash_account
 
 
@@ -358,3 +361,154 @@ def test_transactions_page_handles_unexpected_exception(
 
     assert response.status_code == 200
     assert b"An unexpected error occurred while loading transactions." in response.data
+
+
+def test_transactions_page_renders_delete_form(client_logged_in: FlaskClient):
+    """
+    GIVEN a logged-in client
+    WHEN the client requests the transactions page
+    THEN the response status should be 200 and the delete form and button markers should be present.
+    """
+    with patch(
+        "src.entrypoints.flaskapp.blueprints.accounting.routes.services.get_all_transactions",
+        return_value=[],
+    ):
+        response = client_logged_in.get(
+            "/accounting/transactions",
+            follow_redirects=True,
+        )
+
+    assert response.status_code == 200
+    assert (
+        b"<!--delete_transaction_form this comment is to check that it is reached on test-->"
+        in response.data
+    )
+    assert (
+        b"<!--delete_transaction_button this comment is to check that it is reached on test-->"
+        in response.data
+    )
+
+
+def test_delete_transaction_post_success(client_logged_in: FlaskClient):
+    """
+    GIVEN a logged-in client
+    WHEN the client posts a valid transaction ID to the delete transaction endpoint
+    THEN the response status should be 200, a success flash message displayed,
+    and services.delete_transaction should be called.
+    """
+    with patch(
+        "src.entrypoints.flaskapp.blueprints.accounting.routes.services.delete_transaction"
+    ) as mock_delete, patch(
+        "src.entrypoints.flaskapp.blueprints.accounting.routes.services.get_all_transactions",
+        return_value=[],
+    ):
+        response = client_logged_in.post(
+            "/accounting/delete_transaction",
+            data={"transaction_id": "1"},
+            follow_redirects=True,
+        )
+
+    assert response.status_code == 200
+    assert b"Transaction deleted successfully!" in response.data
+    mock_delete.assert_called_once()
+
+
+def test_delete_transaction_post_handles_value_error(
+    client_logged_in: FlaskClient,
+):
+    """
+    GIVEN a logged-in client submitting a delete transaction request
+    WHEN the services layer raises a ValueError
+    THEN the response status should be 200 and a warning flash message displayed.
+    """
+    with patch(
+        "src.entrypoints.flaskapp.blueprints.accounting.routes.services.delete_transaction",
+        side_effect=ValueError("Invalid transaction ID: -1"),
+    ), patch(
+        "src.entrypoints.flaskapp.blueprints.accounting.routes.services.get_all_transactions",
+        return_value=[],
+    ):
+        response = client_logged_in.post(
+            "/accounting/delete_transaction",
+            data={"transaction_id": "-1"},
+            follow_redirects=True,
+        )
+
+    assert response.status_code == 200
+    assert b"Error deleting transaction: Invalid transaction ID: -1" in response.data
+
+
+def test_delete_transaction_post_handles_unexpected_exception(
+    client_logged_in: FlaskClient,
+):
+    """
+    GIVEN a logged-in client submitting a delete transaction request
+    WHEN the services layer raises an unexpected Exception
+    THEN the response status should be 200 and a generic error flash message displayed.
+    """
+    with patch(
+        "src.entrypoints.flaskapp.blueprints.accounting.routes.services.delete_transaction",
+        side_effect=Exception("Database failure"),
+    ), patch(
+        "src.entrypoints.flaskapp.blueprints.accounting.routes.services.get_all_transactions",
+        return_value=[],
+    ):
+        response = client_logged_in.post(
+            "/accounting/delete_transaction",
+            data={"transaction_id": "1"},
+            follow_redirects=True,
+        )
+
+    assert response.status_code == 200
+    assert (
+        b"An unexpected error occurred while deleting the transaction." in response.data
+    )
+
+
+def test_delete_transaction_post_handles_form_validation_failure(
+    client_logged_in: FlaskClient,
+):
+    """
+    GIVEN a logged-in client submitting a delete request without required transaction_id
+    WHEN the form validation fails
+    THEN the response status should be 200 and a warning flash message displayed.
+    """
+    with patch(
+        "src.entrypoints.flaskapp.blueprints.accounting.routes.services.get_all_transactions",
+        return_value=[],
+    ):
+        response = client_logged_in.post(
+            "/accounting/delete_transaction",
+            data={},
+            follow_redirects=True,
+        )
+
+    assert response.status_code == 200
+    assert b"Invalid transaction selection." in response.data
+
+
+@pytest.mark.parametrize(
+    "invalid_data",
+    [
+        pytest.param("not_an_int", id="value_error_string"),
+        pytest.param("12.34", id="value_error_float_string"),
+        pytest.param([1, 2, 3], id="type_error_list"),
+        pytest.param({"id": 1}, id="type_error_dict"),
+        pytest.param(None, id="type_error_none"),
+    ],
+)
+def test_delete_transaction_form_to_dto_raises_value_error_on_invalid_id(
+    client: FlaskClient,
+    invalid_data: Any,
+):
+    """
+    GIVEN a DeleteTransactionForm with invalid non-integer data causing ValueError or TypeError
+    WHEN to_dto method is called
+    THEN a ValueError should be raised with the message 'Transaction ID must be a valid integer.'
+    """
+    with server.test_request_context():
+        form = DeleteTransactionForm()
+        form.transaction_id.data = invalid_data
+
+        with pytest.raises(ValueError, match="Transaction ID must be a valid integer."):
+            form.to_dto()

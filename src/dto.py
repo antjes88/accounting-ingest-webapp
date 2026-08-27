@@ -57,3 +57,8 @@ class TransactionViewDTO:
 class TransactionFilterDTO:
     start_date: Optional[date] = None
     end_date: Optional[date] = None
+
+
+@dataclass(frozen=True)
+class DeleteTransactionDTO:
+    transaction_id: int

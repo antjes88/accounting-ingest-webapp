@@ -93,3 +93,11 @@ INNER JOIN {ledger_entries_table} le ON t.transaction_id = le.transaction_id
 {where_clause}
 ORDER BY t.transaction_date DESC, t.transaction_id DESC;
 """
+
+DELETE_TRANSACTION = """
+DELETE FROM {ledger_entries_table}
+WHERE transaction_id = %s;
+
+DELETE FROM {transactions_table}
+WHERE transaction_id = %s;
+"""

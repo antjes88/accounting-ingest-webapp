@@ -9,6 +9,7 @@ from src.dto import (
     AccountTypeOptionDTO,
     TransactionViewDTO,
     TransactionFilterDTO,
+    DeleteTransactionDTO,
 )
 
 
@@ -138,3 +139,14 @@ def get_all_transactions(
         )
 
     return result
+
+
+def delete_transaction(
+    repo: repository.AbstractRepository,
+    transaction_dto: DeleteTransactionDTO,
+) -> None:
+
+    if transaction_dto.transaction_id <= 0:
+        raise ValueError(f"Invalid transaction ID: {transaction_dto.transaction_id}")
+
+    repo.delete_transaction(transaction_id=transaction_dto.transaction_id)

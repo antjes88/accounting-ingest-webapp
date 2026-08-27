@@ -306,3 +306,28 @@ def test_where_clause_for_date_range(
 
     assert where_clause == expected_where_clause
     assert params == expected_params
+
+
+def test_delete_transaction(repo_with_data: PostgresRepository):
+    """
+    GIVEN a PostgresRepository initialized with sample transaction data
+    WHEN the delete_transaction method is called with a transaction ID
+    THEN the transaction and its ledger entries should be deleted from the database.
+    """
+    assert len(repo_with_data.get_transactions()) == 1
+
+    repo_with_data.delete_transaction(transaction_id=1)
+
+    assert len(repo_with_data.get_transactions()) == 0
+    assert (
+        repo_with_data.postgres_client.query(
+            f"SELECT * FROM {repo_with_data.transactions_table} WHERE transaction_id = 1"
+        )
+        == []
+    )
+    assert (
+        repo_with_data.postgres_client.query(
+            f"SELECT * FROM {repo_with_data.ledger_entries_table} WHERE transaction_id = 1"
+        )
+        == []
+    )

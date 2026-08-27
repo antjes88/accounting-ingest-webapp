@@ -38,6 +38,13 @@ class AbstractRepository(ABC):
     ) -> None:
         raise NotImplementedError
 
+    @abstractmethod
+    def delete_transaction(
+        self,
+        transaction_id: int,
+    ) -> None:
+        raise NotImplementedError
+
 
 @dataclass
 class SqlTable:
@@ -222,4 +229,14 @@ class PostgresRepository(AbstractRepository):
                 account.is_physical,
                 account.is_archived,
             ),
+        )
+
+    def delete_transaction(self, transaction_id: int) -> None:
+
+        self.postgres_client.execute(
+            sql_queries.DELETE_TRANSACTION.format(
+                ledger_entries_table=self.ledger_entries_table,
+                transactions_table=self.transactions_table,
+            ),
+            params=(transaction_id, transaction_id),
         )

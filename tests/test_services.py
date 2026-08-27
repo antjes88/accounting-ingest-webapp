@@ -11,6 +11,7 @@ from src.services import (
     get_parent_account_options,
     get_account_type_options,
     get_all_transactions,
+    delete_transaction,
 )
 from src.dto import (
     CreateTransactionDTO,
@@ -19,6 +20,7 @@ from src.dto import (
     ParentAccountOptionDTO,
     AccountTypeOptionDTO,
     TransactionViewDTO,
+    DeleteTransactionDTO,
 )
 from src import model
 from tests.helpers.sample_data import (
@@ -261,3 +263,32 @@ def test_get_all_transactions(repo_with_data: PostgresRepository):
     assert t.amount == Decimal("100.00")
     assert t.debit_account_name == "Petty Cash"
     assert t.credit_account_name == "Base Salary"
+
+
+def test_delete_transaction(repo_with_data: PostgresRepository):
+    """
+    GIVEN a PostgresRepository with sample transactions and a DeleteTransactionDTO
+    WHEN delete_transaction service is called
+    THEN the transaction should be deleted from the repository.
+    """
+    assert len(get_all_transactions(repo_with_data)) == 1
+
+    dto = DeleteTransactionDTO(transaction_id=1)
+    delete_transaction(repo_with_data, dto)
+
+    assert len(get_all_transactions(repo_with_data)) == 0
+
+
+@pytest.mark.parametrize("invalid_id", [0, -1, -100])
+def test_delete_transaction_raises_value_error_for_invalid_id(
+    invalid_id: int,
+):
+    """
+    GIVEN a DeleteTransactionDTO with an invalid transaction ID (<= 0)
+    WHEN delete_transaction service is called
+    THEN a ValueError should be raised.
+    """
+    dto = DeleteTransactionDTO(transaction_id=invalid_id)
+
+    with pytest.raises(ValueError, match=f"Invalid transaction ID: {invalid_id}"):
+        delete_transaction(None, dto)  # type: ignore
