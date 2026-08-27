@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
-from typing import List
+from typing import List, Optional
 from dataclasses import dataclass
+from datetime import date
+from decimal import Decimal
 
 from src import model
 from src.utils.postgresql_client import PostgresGCPClient
@@ -11,6 +13,14 @@ class AbstractRepository(ABC):
 
     @abstractmethod
     def get_chart_of_accounts(self) -> model.ChartOfAccounts:
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_transactions(
+        self,
+        start_date: Optional[date] = None,
+        end_date: Optional[date] = None,
+    ) -> List[model.Transaction]:
         raise NotImplementedError
 
     @abstractmethod
@@ -90,6 +100,73 @@ class PostgresRepository(AbstractRepository):
 
     def get_chart_of_accounts(self) -> model.ChartOfAccounts:
         return model.ChartOfAccounts(self._load_accounts())
+
+    def _where_clause_for_date_range(
+        self, start_date: Optional[date], end_date: Optional[date]
+    ) -> tuple[str, Optional[tuple[date, ...]]]:
+        conditions: list[str] = []
+        params_list: list[date] = []
+        if start_date:
+            conditions.append("t.transaction_date >= %s")
+            params_list.append(start_date)
+        if end_date:
+            conditions.append("t.transaction_date <= %s")
+            params_list.append(end_date)
+
+        where_clause = f"WHERE {' AND '.join(conditions)}" if conditions else ""
+        params = tuple(params_list) if params_list else None
+
+        return where_clause, params
+
+    def get_transactions(
+        self,
+        start_date: Optional[date] = None,
+        end_date: Optional[date] = None,
+    ) -> List[model.Transaction]:
+
+        where_clause, params = self._where_clause_for_date_range(start_date, end_date)
+        rows = self.postgres_client.query(
+            sql_queries.SELECT_ALL_TRANSACTIONS.format(
+                transactions_table=self.transactions_table,
+                ledger_entries_table=self.ledger_entries_table,
+                where_clause=where_clause,
+            ),
+            params=params,
+        )
+        chart = self.get_chart_of_accounts()
+
+        transactions_dict: dict[
+            int, tuple[date, Optional[str], list[model.TransactionLine]]
+        ] = {}
+        for row in rows:
+            t_id, t_date, t_desc, acc_id, entry_type_id, amount = row
+            if t_id not in transactions_dict:
+                transactions_dict[t_id] = (t_date, t_desc, [])
+            account = chart.get_account_by_id(acc_id)
+            entry_type = (
+                model.EntryType.DEBIT
+                if entry_type_id == model.EntryType.DEBIT.id
+                else model.EntryType.CREDIT
+            )
+            transactions_dict[t_id][2].append(
+                model.TransactionLine(
+                    account=account,
+                    amount=Decimal(str(amount)),
+                    entry_type=entry_type,
+                )
+            )
+
+        transactions: list[model.Transaction] = []
+        for t_id, (t_date, t_desc, lines) in transactions_dict.items():
+            transactions.append(
+                model.Transaction(
+                    id=t_id,
+                    date=t_date,
+                    description=t_desc,
+                    lines=lines,
+                )
+            )
+        return transactions
 
     def get_max_transaction_id(self) -> int:
 

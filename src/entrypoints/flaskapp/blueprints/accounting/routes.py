@@ -1,4 +1,4 @@
-from flask import render_template, flash, redirect, url_for
+from flask import render_template, flash, redirect, url_for, request
 import os
 
 from src.utils.postgresql_client import PostgresGCPClient
@@ -7,7 +7,7 @@ from src.repository import PostgresRepository
 from src import services
 
 from . import accounting_pages
-from .forms import NewTransactionForm, NewAccountForm
+from .forms import NewTransactionForm, NewAccountForm, TransactionFilterForm
 
 logger = default_module_logger(__file__)
 
@@ -41,7 +41,8 @@ def new_transaction():
             )
 
             flash("Transaction recorded successfully!", "success")
-            return redirect(url_for("accounting_pages.new_transaction"))
+            form.account_debit.data = "-- Select an Account --"
+            form.amount.data = 0.0
 
         except ValueError as err:
             logger.warning(f"Validation error recording transaction: {err}")
@@ -73,7 +74,7 @@ def new_account():
             )
 
             flash("Account created successfully!", "success")
-            return redirect(url_for("accounting_pages.new_account"))
+            form.name.data = ""
 
         except ValueError as err:
             logger.warning(f"Validation error creating account: {err}")
@@ -84,3 +85,29 @@ def new_account():
             flash("An unexpected error occurred while creating the account.", "error")
 
     return render_template("new_account.html", form=form)
+
+
+@accounting_pages.route("/transactions", methods=["GET"])
+def list_transactions():
+    repo = _get_repository()
+
+    form = TransactionFilterForm(formdata=request.args, meta={"csrf": False})
+    filter_dto = form.to_dto()
+    if request.args:
+        if form.validate():
+            filter_dto = form.to_dto()
+
+    try:
+        transactions = services.get_all_transactions(repo, filter_dto=filter_dto)
+
+    except ValueError as err:
+        logger.warning(f"Validation error filtering transactions: {err}")
+        flash(f"Error filtering transactions: {err}", "warning")
+        transactions = services.get_all_transactions(repo)
+
+    except Exception:
+        logger.exception("Unexpected error listing transactions")
+        flash("An unexpected error occurred while loading transactions.", "error")
+        transactions = []
+
+    return render_template("transactions.html", transactions=transactions, form=form)

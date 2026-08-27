@@ -41,3 +41,19 @@ class ParentAccountOptionDTO:
     id: int
     name: str
     account_type_id: int
+
+
+@dataclass(frozen=True)
+class TransactionViewDTO:
+    id: int
+    date: date
+    description: Optional[str]
+    amount: Decimal
+    debit_account_name: str
+    credit_account_name: str
+
+
+@dataclass(frozen=True)
+class TransactionFilterDTO:
+    start_date: Optional[date] = None
+    end_date: Optional[date] = None

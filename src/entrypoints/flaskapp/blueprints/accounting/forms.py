@@ -3,6 +3,7 @@ from typing import Any
 from flask_wtf import FlaskForm
 from wtforms import SelectField, FloatField, StringField, DateField, SubmitField
 from wtforms.validators import DataRequired, optional
+import datetime as dt
 
 from src.dto import (
     CreateTransactionDTO,
@@ -10,6 +11,7 @@ from src.dto import (
     PostableAccountOptionDTO,
     ParentAccountOptionDTO,
     AccountTypeOptionDTO,
+    TransactionFilterDTO,
 )
 
 
@@ -47,7 +49,9 @@ class NewTransactionForm(FlaskForm):
 
     amount = FloatField("Amount", validators=[DataRequired()])
     description = StringField("Description", validators=[optional()])
-    date = DateField("Date", validators=[DataRequired()], format="%Y-%m-%d")
+    date = DateField(
+        "Date", validators=[DataRequired()], format="%Y-%m-%d", default=dt.date.today()
+    )
     submit = SubmitField("Submit")
 
     def __init__(
@@ -172,4 +176,29 @@ class NewAccountForm(FlaskForm):
             ),
             is_physical=self.is_physical.data == "True",
             is_archived=self.is_archived.data == "True",
+        )
+
+
+class TransactionFilterForm(FlaskForm):
+    start_date = DateField(
+        "From Date",
+        validators=[optional()],
+        format="%Y-%m-%d",
+        default=dt.date.today().replace(day=1),
+    )
+    end_date = DateField(
+        "To Date",
+        validators=[optional()],
+        format="%Y-%m-%d",
+        default=(
+            dt.date.today().replace(month=dt.date.today().month + 1).replace(day=1)
+            - dt.timedelta(days=1)
+        ),
+    )
+    submit = SubmitField("Filter")
+
+    def to_dto(self) -> TransactionFilterDTO:
+        return TransactionFilterDTO(
+            start_date=self.start_date.data,
+            end_date=self.end_date.data,
         )
