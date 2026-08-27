@@ -1,6 +1,6 @@
 # Accounting-ingest-webapp
 
-This repository is a web-based personal accounting application built with Python and Flask that allows users to securely log in, manage their chart of accounts, ingest financial transactions, and explore existing ledger records with dynamic date range filtering. At its core, it implements a double-entry bookkeeping system where users can record transactions by specifying a debit account, a credit account, an amount, and a description. It also supports hierarchical chart-of-accounts management (parent and sub-accounts categorized by type, physical status, and archive state).
+This repository is a web-based personal accounting application built with Python and Flask that allows users to securely log in, manage their chart of accounts, ingest financial transactions, delete existing transactions via interactive row selection, and explore ledger records with dynamic date range filtering. At its core, it implements a double-entry bookkeeping system where users can record transactions by specifying a debit account, a credit account, an amount, and a description. It also supports hierarchical chart-of-accounts management (parent and sub-accounts categorized by type, physical status, and archive state).
 
 The backend uses a **Clean / Onion Architecture** and **Domain-Driven Design (DDD)** approach combined with the **Repository pattern** and dedicated **Data Transfer Objects (DTOs)**, ensuring complete decoupling between presentation (Flask/WTForms), domain business rules (Aggregate Roots and Entities), and PostgreSQL persistence infrastructure. Furthermore, the repository is highly structured for continuous integration and deployment, featuring strict static typing, a comprehensive pytest suite for automated testing with Gherkin-style documentation, a Dockerized development container, and GitHub Actions pipelines that handle both testing and Terraform-based infrastructure deployment to Google Cloud Platform.
 
@@ -8,14 +8,28 @@ The Terraform configuration automates the deployment of the Accounting Ingest We
 
 ## Features
 
-- **Double-Entry Bookkeeping**: Enforces balanced debit and credit transactions across asset, liability, equity, revenue, and expense accounts.
-- **Chart of Accounts & Domain Invariants**: Implements a dedicated DDD Aggregate Root (`ChartOfAccounts`) enforcing unique account naming and hierarchy integrity (validating parent-child relationships and preventing invalid nesting).
-- **Transaction Exploration & Date Range Filtering**: Allows viewing and filtering transactions by custom date intervals (`start_date`, `end_date`), seamlessly mapped from web query forms via `TransactionFilterDTO` down to parameterized SQL queries.
-- **Clean Architecture & DTOs**: Strict separation of concerns using Command and Query Data Transfer Objects (`src/dto.py`) to isolate Flask web forms from domain models.
-- **Comprehensive Testing**: Includes automated unit tests and integration tests with pytest, fixture isolation, Gherkin-style documentation, and test coverage reporting.
-- **Development Environment**: Pre-configured VS Code Dev Containers for consistent local development and debugging.
-- **Pipeline Integration**: Automated CI/CD pipelines via GitHub Actions to validate, lint, and unit test the Python solution.
-- **Infrastructure as Code (IaC)**: Automated infrastructure deployment to Google Cloud Platform (GCP) managed via Terraform.
+### Web Application Features
+
+- **User Authentication & Session Security**: Protected login and logout flows securing application endpoints with session management.
+- **Double-Entry Bookkeeping**: Enforces balanced debit and credit entries across asset, liability, equity, revenue, and expense accounts.
+- **Chart of Accounts Management**: Allows creating and structuring parent and child accounts categorized by type, physical status, and archive state.
+- **Dynamic Dependent Form Dropdowns**: Real-time client-side dropdown filtering for postable and parent accounts based on selected account types without requiring page reloads.
+- **Transaction Exploration & Date Range Filtering**: View and filter ledger records by customizable date ranges (`start_date`, `end_date`).
+- **Interactive Transaction Deletion**: Select individual transaction rows directly within the web table to safely delete transactions and their associated ledger entries.
+- **Visual Feedback & Notification Toasts**: Real-time Bootstrap toasts and flash alerts communicating domain validation errors (`ValueError`), success notices, and system messages.
+
+### System & Architecture Features
+
+- **Clean / Onion Architecture & DDD**: Pure Python zero-dependency domain core (`src/model.py`), aggregate roots (`ChartOfAccounts`, `Transaction`), and repository interfaces (`AbstractRepository`) adhering to the Dependency Inversion Principle.
+- **Strict Domain Invariants Enforcement**: Enforces business rules at the domain level, including balanced debit/credit sums, single-level parent-child account nesting, and case-insensitive unique account naming.
+- **Decoupled Boundaries via DTOs**: Presentation, forms, and services communicate exclusively through immutable Data Transfer Objects (`src/dto.py`).
+- **Multi-Entrypoint Extensibility**: Clean decoupling allows extending entrypoints (such as CLI tools in `src/entrypoints/cli`) without modifying core domain logic.
+- **PostgreSQL Infrastructure Adapter**: Centralized, safely parameterized SQL queries (`src/utils/sql_queries.py`) with dynamic table abstractions (`SqlTable`).
+- **Automated Database Scaffolding & Permissions**: SQL scaffolding (`database/build_scaffolding.psql`) with environment-based permission configuration (*dev*, *test*, *prod*).
+- **Comprehensive Automated Testing**: Pytest test suite with Gherkin-style documentation, isolated fixtures, parametrization, and code coverage enforcement.
+- **Development Container**: Pre-configured VS Code Dev Containers (`.devcontainer/`) for reproducible local development.
+- **CI/CD Automation**: GitHub Actions workflows for continuous integration (testing and coverage verification) and Terraform validation.
+- **Infrastructure as Code (IaC)**: Automated GCP infrastructure deployment (Cloud Run, Cloud SQL PostgreSQL 18, Identity-Aware Proxy, Secret Manager) managed via Terraform.
 
 ## Development environment
 
