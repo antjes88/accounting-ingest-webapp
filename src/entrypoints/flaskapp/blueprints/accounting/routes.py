@@ -100,11 +100,6 @@ def list_transactions():
     try:
         transactions = services.get_all_transactions(repo, filter_dto=filter_dto)
 
-    except ValueError as err:
-        logger.warning(f"Validation error filtering transactions: {err}")
-        flash(f"Error filtering transactions: {err}", "warning")
-        transactions = services.get_all_transactions(repo)
-
     except Exception:
         logger.exception("Unexpected error listing transactions")
         flash("An unexpected error occurred while loading transactions.", "error")
