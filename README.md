@@ -1,6 +1,6 @@
 # Accounting-ingest-webapp
 
-This repository is a web-based personal accounting application built with Python and Flask that allows users to securely log in, manage their chart of accounts, and ingest financial transactions. At its core, it implements a double-entry bookkeeping system where users can record transactions by specifying a debit account, a credit account, an amount, and a description. It also supports hierarchical chart-of-accounts management (parent and sub-accounts categorized by type, physical status, and archive state).
+This repository is a web-based personal accounting application built with Python and Flask that allows users to securely log in, manage their chart of accounts, ingest financial transactions, and explore existing ledger records with dynamic date range filtering. At its core, it implements a double-entry bookkeeping system where users can record transactions by specifying a debit account, a credit account, an amount, and a description. It also supports hierarchical chart-of-accounts management (parent and sub-accounts categorized by type, physical status, and archive state).
 
 The backend uses a **Clean / Onion Architecture** and **Domain-Driven Design (DDD)** approach combined with the **Repository pattern** and dedicated **Data Transfer Objects (DTOs)**, ensuring complete decoupling between presentation (Flask/WTForms), domain business rules (Aggregate Roots and Entities), and PostgreSQL persistence infrastructure. Furthermore, the repository is highly structured for continuous integration and deployment, featuring strict static typing, a comprehensive pytest suite for automated testing with Gherkin-style documentation, a Dockerized development container, and GitHub Actions pipelines that handle both testing and Terraform-based infrastructure deployment to Google Cloud Platform.
 
@@ -10,6 +10,7 @@ The Terraform configuration automates the deployment of the Accounting Ingest We
 
 - **Double-Entry Bookkeeping**: Enforces balanced debit and credit transactions across asset, liability, equity, revenue, and expense accounts.
 - **Chart of Accounts & Domain Invariants**: Implements a dedicated DDD Aggregate Root (`ChartOfAccounts`) enforcing unique account naming and hierarchy integrity (validating parent-child relationships and preventing invalid nesting).
+- **Transaction Exploration & Date Range Filtering**: Allows viewing and filtering transactions by custom date intervals (`start_date`, `end_date`), seamlessly mapped from web query forms via `TransactionFilterDTO` down to parameterized SQL queries.
 - **Clean Architecture & DTOs**: Strict separation of concerns using Command and Query Data Transfer Objects (`src/dto.py`) to isolate Flask web forms from domain models.
 - **Comprehensive Testing**: Includes automated unit tests and integration tests with pytest, fixture isolation, Gherkin-style documentation, and test coverage reporting.
 - **Development Environment**: Pre-configured VS Code Dev Containers for consistent local development and debugging.
