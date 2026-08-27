@@ -8,18 +8,22 @@
             <div class="card-header bg-primary text-white">Main Menu</div>
             <div class="card-body">
                 <div class="mt-3">
+                    <a href="{{ url_for('accounting_pages.list_transactions') }}">
+                        <button type="button" class="btn btn-primary w-100">View Transactions</button>
+                    </a>
+                </div>
+                <div class="mt-3">
                     <a href="{{ url_for('accounting_pages.new_transaction') }}">
-                        <button type="button" class="btn btn-primary w-100">New Transaction</button>
+                        <button type="button" class="btn btn-outline-primary w-100">New Transaction</button>
                     </a>
                 </div>
                 <div class="mt-3">
                     <a href="{{ url_for('accounting_pages.new_account') }}">
-                        <button type="button" class="btn btn-primary w-100">New Account</button>
+                        <button type="button" class="btn btn-outline-primary w-100">New Account</button>
                     </a>
                 </div>
             </div>
         </div>
     </div>
-</div>
 </div>
 {% endblock %}

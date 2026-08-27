@@ -79,3 +79,17 @@ INSERT INTO {accounts_table}
 VALUES
 (%s, %s, %s, %s, %s, %s);
 """
+
+SELECT_ALL_TRANSACTIONS = """
+SELECT
+    t.transaction_id,
+    t.transaction_date,
+    t.transaction_description,
+    le.account_id,
+    le.entry_type_id,
+    le.amount
+FROM {transactions_table} t
+INNER JOIN {ledger_entries_table} le ON t.transaction_id = le.transaction_id
+{where_clause}
+ORDER BY t.transaction_date DESC, t.transaction_id DESC;
+"""

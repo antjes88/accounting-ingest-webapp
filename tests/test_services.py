@@ -10,6 +10,7 @@ from src.services import (
     get_postable_account_options,
     get_parent_account_options,
     get_account_type_options,
+    get_all_transactions,
 )
 from src.dto import (
     CreateTransactionDTO,
@@ -17,6 +18,7 @@ from src.dto import (
     PostableAccountOptionDTO,
     ParentAccountOptionDTO,
     AccountTypeOptionDTO,
+    TransactionViewDTO,
 )
 from src import model
 from tests.helpers.sample_data import (
@@ -240,3 +242,22 @@ def test_record_new_transaction_raises_value_error_when_credit_account_not_found
         ValueError, match=f"Credit account with ID {non_existent_id} not found."
     ):
         record_new_transaction(repo_with_data, dto)
+
+
+def test_get_all_transactions(repo_with_data: PostgresRepository):
+    """
+    GIVEN a PostgresRepository with sample transactions
+    WHEN get_all_transactions service is called
+    THEN it should return TransactionViewDTO objects correctly mapped from the repository.
+    """
+    transactions = get_all_transactions(repo_with_data)
+    t = transactions[0]
+
+    assert len(transactions) == 1
+    assert isinstance(t, TransactionViewDTO)
+    assert t.id == 1
+    assert t.date == date(2024, 1, 1)
+    assert t.description == "Test"
+    assert t.amount == Decimal("100.00")
+    assert t.debit_account_name == "Petty Cash"
+    assert t.credit_account_name == "Base Salary"

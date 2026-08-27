@@ -190,3 +190,119 @@ def test_post_new_account(
         is_physical,
         is_archived,
     )
+
+
+def test_get_transactions(repo_with_data: PostgresRepository):
+    """
+    GIVEN a PostgresRepository initialized with sample transaction data
+    WHEN the get_transactions method is called
+    THEN it should return a list of Transaction entities with correct lines and attributes.
+    """
+    transactions = repo_with_data.get_transactions()
+    t = transactions[0]
+
+    assert len(transactions) == 1
+    assert t.id == 1
+    assert t.date == date(2024, 1, 1)
+    assert t.description == "Test"
+    assert t.amount == Decimal("100.00")
+    assert len(t._lines) == 2
+    assert t.get_debit_account_id() == petty_cash_account.id
+    assert t.get_credit_account_id() == base_salary_account.id
+
+
+def test_get_transactions_with_matching_date_filters(
+    repo_with_data: PostgresRepository,
+):
+    """
+    GIVEN a PostgresRepository initialized with a transaction on 2024-01-01
+    WHEN the get_transactions method is called with matching start_date and end_date filters
+    THEN it should return the matching Transaction entity.
+    """
+    transactions_exact = repo_with_data.get_transactions(
+        start_date=date(2024, 1, 1), end_date=date(2024, 1, 1)
+    )
+    transactions_from = repo_with_data.get_transactions(start_date=date(2023, 12, 31))
+    transactions_to = repo_with_data.get_transactions(end_date=date(2024, 1, 2))
+
+    assert len(transactions_exact) == 1
+    assert transactions_exact[0].id == 1
+    assert len(transactions_from) == 1
+    assert len(transactions_to) == 1
+
+
+def test_get_transactions_with_non_matching_date_filters(
+    repo_with_data: PostgresRepository,
+):
+    """
+    GIVEN a PostgresRepository initialized with a transaction on 2024-01-01
+    WHEN the get_transactions method is called with a date range outside the transaction date
+    THEN it should return an empty list.
+    """
+    transactions_past = repo_with_data.get_transactions(
+        start_date=date(2023, 1, 1), end_date=date(2023, 12, 31)
+    )
+    transactions_future = repo_with_data.get_transactions(start_date=date(2024, 1, 2))
+
+    assert len(transactions_past) == 0
+    assert len(transactions_future) == 0
+
+
+@pytest.mark.parametrize(
+    "start_date, end_date, expected_where_clause, expected_params",
+    [
+        pytest.param(
+            None,
+            None,
+            "",
+            None,
+            id="no_dates",
+        ),
+        pytest.param(
+            date(2024, 1, 1),
+            None,
+            "WHERE t.transaction_date >= %s",
+            (date(2024, 1, 1),),
+            id="start_date_only",
+        ),
+        pytest.param(
+            None,
+            date(2024, 12, 31),
+            "WHERE t.transaction_date <= %s",
+            (date(2024, 12, 31),),
+            id="end_date_only",
+        ),
+        pytest.param(
+            date(2024, 1, 1),
+            date(2024, 12, 31),
+            "WHERE t.transaction_date >= %s AND t.transaction_date <= %s",
+            (date(2024, 1, 1), date(2024, 12, 31)),
+            id="both_dates_different",
+        ),
+        pytest.param(
+            date(2024, 6, 15),
+            date(2024, 6, 15),
+            "WHERE t.transaction_date >= %s AND t.transaction_date <= %s",
+            (date(2024, 6, 15), date(2024, 6, 15)),
+            id="same_start_and_end_date",
+        ),
+    ],
+)
+def test_where_clause_for_date_range(
+    postgres_repo: PostgresRepository,
+    start_date: Optional[date],
+    end_date: Optional[date],
+    expected_where_clause: str,
+    expected_params: Optional[tuple[date, ...]],
+):
+    """
+    GIVEN start_date and end_date parameters
+    WHEN _where_clause_for_date_range is called on PostgresRepository
+    THEN it should return the expected SQL WHERE clause string and parameter tuple.
+    """
+    where_clause, params = postgres_repo._where_clause_for_date_range(
+        start_date=start_date, end_date=end_date
+    )
+
+    assert where_clause == expected_where_clause
+    assert params == expected_params

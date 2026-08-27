@@ -1,3 +1,5 @@
+from typing import Optional
+
 from src import repository, model
 from src.dto import (
     CreateTransactionDTO,
@@ -5,6 +7,8 @@ from src.dto import (
     PostableAccountOptionDTO,
     ParentAccountOptionDTO,
     AccountTypeOptionDTO,
+    TransactionViewDTO,
+    TransactionFilterDTO,
 )
 
 
@@ -104,3 +108,33 @@ def get_account_type_options() -> list[AccountTypeOptionDTO]:
         )
         for account_type in model.AccountType
     ]
+
+
+def get_all_transactions(
+    repo: repository.AbstractRepository,
+    filter_dto: Optional[TransactionFilterDTO] = None,
+) -> list[TransactionViewDTO]:
+    start_date = filter_dto.start_date if filter_dto else None
+    end_date = filter_dto.end_date if filter_dto else None
+    transactions = repo.get_transactions(start_date=start_date, end_date=end_date)
+
+    result: list[TransactionViewDTO] = []
+    for t in transactions:
+        debit_line = next(
+            line for line in t._lines if line.entry_type == model.EntryType.DEBIT
+        )
+        credit_line = next(
+            line for line in t._lines if line.entry_type == model.EntryType.CREDIT
+        )
+        result.append(
+            TransactionViewDTO(
+                id=t.id,  # type: ignore
+                date=t.date,
+                description=t.description,
+                amount=t.amount,
+                debit_account_name=debit_line.account.name,
+                credit_account_name=credit_line.account.name,
+            )
+        )
+
+    return result

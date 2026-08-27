@@ -260,3 +260,101 @@ def test_new_account_post_handles_unexpected_exception(
 
     assert response.status_code == 200
     assert b"An unexpected error occurred while creating the account." in response.data
+
+
+def test_transactions_page_is_reached(
+    client_logged_in: FlaskClient, repo_with_data: PostgresRepository
+):
+    """
+    GIVEN a logged-in client and a repository with sample transactions
+    WHEN the client requests the transactions page ("/accounting/transactions")
+    THEN the response status code should be 200, the table header should be rendered,
+    and transaction data should be visible.
+    """
+    response = client_logged_in.get(
+        "/accounting/transactions",
+        follow_redirects=True,
+    )
+
+    assert 200 == response.status_code
+    assert (
+        b"<!--transactions_list this comment is to check that it is reached on test-->"
+        in response.data
+    )
+
+
+def test_transactions_page_empty_state(
+    client_logged_in: FlaskClient, repo_with_data: PostgresRepository
+):
+    """
+    GIVEN a logged-in client and an empty transactions list
+    WHEN the client requests the transactions page
+    THEN the empty state message should be displayed.
+    """
+    with patch(
+        "src.entrypoints.flaskapp.blueprints.accounting.routes.services.get_all_transactions",
+        return_value=[],
+    ):
+        response = client_logged_in.get(
+            "/accounting/transactions",
+            follow_redirects=True,
+        )
+
+    assert response.status_code == 200
+    assert b"No transactions found." in response.data
+
+
+def test_transactions_page_with_valid_date_filter(
+    client_logged_in: FlaskClient, repo_with_data: PostgresRepository
+):
+    """
+    GIVEN a logged-in client and a repository with a transaction on 2024-01-01
+    WHEN the client queries the transactions page with a matching date filter
+    THEN the response status should be 200 and the transaction details should be present.
+    """
+    response = client_logged_in.get(
+        "/accounting/transactions?start_date=2024-01-01&end_date=2024-01-31",
+        follow_redirects=True,
+    )
+
+    assert response.status_code == 200
+    assert b"Petty Cash" in response.data
+    assert "£100.00".encode("utf-8") in response.data
+
+
+def test_transactions_page_with_non_matching_date_filter(
+    client_logged_in: FlaskClient, repo_with_data: PostgresRepository
+):
+    """
+    GIVEN a logged-in client and a repository with a transaction on 2024-01-01
+    WHEN the client queries the transactions page with a date range with no matching transactions
+    THEN the response status should be 200 and the empty state message should be displayed.
+    """
+    response = client_logged_in.get(
+        "/accounting/transactions?start_date=1900-01-01&end_date=1900-01-31",
+        follow_redirects=True,
+    )
+
+    assert response.status_code == 200
+    assert b"No transactions found." in response.data
+
+
+def test_transactions_page_handles_unexpected_exception(
+    client_logged_in: FlaskClient, repo_with_data: PostgresRepository
+):
+    """
+    GIVEN a logged-in client
+    WHEN services.get_all_transactions raises an unexpected Exception
+    THEN an error flash message should be displayed.
+    """
+    with patch(
+        "src.entrypoints.flaskapp.blueprints.accounting.routes.services.get_all_transactions",
+        side_effect=Exception("Database connection failure"),
+    ):
+        response = client_logged_in.get(
+            "/accounting/transactions",
+            follow_redirects=True,
+        )
+
+    assert response.status_code == 200
+    assert b"An unexpected error occurred while loading transactions." in response.data
