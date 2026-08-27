@@ -1,7 +1,14 @@
 from decimal import Decimal
 from typing import Any
 from flask_wtf import FlaskForm
-from wtforms import SelectField, FloatField, StringField, DateField, SubmitField
+from wtforms import (
+    SelectField,
+    FloatField,
+    StringField,
+    DateField,
+    SubmitField,
+    HiddenField,
+)
 from wtforms.validators import DataRequired, optional
 import datetime as dt
 
@@ -12,6 +19,7 @@ from src.dto import (
     ParentAccountOptionDTO,
     AccountTypeOptionDTO,
     TransactionFilterDTO,
+    DeleteTransactionDTO,
 )
 
 
@@ -201,4 +209,18 @@ class TransactionFilterForm(FlaskForm):
         return TransactionFilterDTO(
             start_date=self.start_date.data,
             end_date=self.end_date.data,
+        )
+
+
+class DeleteTransactionForm(FlaskForm):
+    transaction_id = HiddenField("Transaction ID", validators=[DataRequired()])
+    submit = SubmitField("Delete Transaction")
+
+    def to_dto(self) -> DeleteTransactionDTO:
+        try:
+            t_id = int(self.transaction_id.data)  # type: ignore
+        except (ValueError, TypeError):
+            raise ValueError("Transaction ID must be a valid integer.")
+        return DeleteTransactionDTO(
+            transaction_id=t_id,
         )

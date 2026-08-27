@@ -4,7 +4,17 @@
 <!--transactions_list this comment is to check that it is reached on test-->
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h2>Transactions</h2>
-    <div>
+    <div class="d-flex gap-2 align-items-center">
+        <form id="delete-transaction-form" method="POST" action="{{ url_for('accounting_pages.delete_transaction') }}"
+            class="d-inline">
+            <!--delete_transaction_form this comment is to check that it is reached on test-->
+            {{ delete_form.csrf_token }}
+            {{ delete_form.transaction_id(id="selected-transaction-id") }}
+            <button id="delete-btn" type="submit" class="btn btn-danger d-none">
+                <!--delete_transaction_button this comment is to check that it is reached on test-->
+                Delete Transaction
+            </button>
+        </form>
         <a href="{{ url_for('accounting_pages.new_transaction') }}" class="btn btn-primary">
             + New Transaction
         </a>
@@ -53,7 +63,7 @@
                 </thead>
                 <tbody>
                     {% for t in transactions %}
-                    <tr>
+                    <tr class="transaction-row" data-transaction-id="{{ t.id }}" style="cursor: pointer;">
                         <td class="text-center text-muted fw-bold">{{ t.id }}</td>
                         <td>{{ t.date.strftime('%Y-%m-%d') if t.date else '' }}</td>
                         <td>{{ t.description or '-' }}</td>
@@ -85,4 +95,33 @@
         {% endif %}
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const rows = document.querySelectorAll('.transaction-row');
+        const deleteBtn = document.getElementById('delete-btn');
+        const transactionIdInput = document.getElementById('selected-transaction-id') || document.querySelector('#delete-transaction-form input[name="transaction_id"]');
+        let selectedRow = null;
+
+        rows.forEach(function (row) {
+            row.addEventListener('click', function () {
+                if (selectedRow === row) {
+                    row.classList.remove('table-active');
+                    selectedRow = null;
+                    if (transactionIdInput) transactionIdInput.value = '';
+                    if (deleteBtn) deleteBtn.classList.add('d-none');
+                } else {
+                    if (selectedRow) {
+                        selectedRow.classList.remove('table-active');
+                    }
+                    row.classList.add('table-active');
+                    selectedRow = row;
+                    const transId = row.getAttribute('data-transaction-id');
+                    if (transactionIdInput) transactionIdInput.value = transId;
+                    if (deleteBtn) deleteBtn.classList.remove('d-none');
+                }
+            });
+        });
+    });
+</script>
 {% endblock %}

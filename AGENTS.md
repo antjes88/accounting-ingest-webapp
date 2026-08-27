@@ -6,7 +6,7 @@ It is a web-based personal double-entry bookkeeping accounting application built
 
 - Python version: 3.10. Don't use newer syntax.
 - Dependency management: `pip` with requirements for the app in `requirements.txt` file.
-- Always ask for approval before implementing changes.
+- Always ask for approval before implementing changes. Do not commit changes.
 
 
 ## 2. Core Architecture Rules:
