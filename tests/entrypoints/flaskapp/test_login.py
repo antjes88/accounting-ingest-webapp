@@ -1,7 +1,7 @@
 from flask.testing import FlaskClient
 import pytest
 
-from src.entrypoints.flaskapp.app import server
+from src.entrypoints.webapp.app import server
 from tests.helpers.flask_helpers import get_protected_routes
 from tests.helpers.sample_data import web_credentials
 

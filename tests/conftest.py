@@ -4,7 +4,7 @@ from typing import Generator
 from flask.testing import FlaskClient
 from src.utils.postgresql_client import PostgresGCPClient
 from src.repository import PostgresRepository
-from src.entrypoints.flaskapp.app import server
+from src.entrypoints.webapp.app import server
 from tests.helpers.sample_data import web_credentials
 
 

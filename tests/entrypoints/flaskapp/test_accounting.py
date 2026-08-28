@@ -7,9 +7,8 @@ from unittest.mock import patch
 
 from repository import PostgresRepository
 from src import model
-from src.dto import DeleteTransactionDTO
-from src.entrypoints.flaskapp.app import server
-from src.entrypoints.flaskapp.blueprints.accounting.forms import DeleteTransactionForm
+from src.entrypoints.webapp.app import server
+from src.entrypoints.webapp.blueprints.accounting.forms import DeleteTransactionForm
 from tests.helpers.sample_data import cash_account
 
 
@@ -154,7 +153,7 @@ def test_new_transaction_post_handles_value_error(
     and the warning flash message should be displayed.
     """
     with patch(
-        "src.entrypoints.flaskapp.blueprints.accounting.routes.services.record_new_transaction",
+        "src.entrypoints.webapp.blueprints.accounting.routes.services.record_new_transaction",
         side_effect=ValueError("Test validation failure"),
     ):
         response = client_logged_in.post(
@@ -185,7 +184,7 @@ def test_new_transaction_post_handles_unexpected_exception(
     and the generic error flash message should be displayed.
     """
     with patch(
-        "src.entrypoints.flaskapp.blueprints.accounting.routes.services.record_new_transaction",
+        "src.entrypoints.webapp.blueprints.accounting.routes.services.record_new_transaction",
         side_effect=Exception("Database crash"),
     ):
         response = client_logged_in.post(
@@ -219,7 +218,7 @@ def test_new_account_post_handles_value_error(
     and the warning flash message should be displayed.
     """
     with patch(
-        "src.entrypoints.flaskapp.blueprints.accounting.routes.services.record_new_account",
+        "src.entrypoints.webapp.blueprints.accounting.routes.services.record_new_account",
         side_effect=ValueError("Invalid hierarchy error"),
     ):
         response = client_logged_in.post(
@@ -247,7 +246,7 @@ def test_new_account_post_handles_unexpected_exception(
     and the generic error flash message should be displayed.
     """
     with patch(
-        "src.entrypoints.flaskapp.blueprints.accounting.routes.services.record_new_account",
+        "src.entrypoints.webapp.blueprints.accounting.routes.services.record_new_account",
         side_effect=Exception("Database crash"),
     ):
         response = client_logged_in.post(
@@ -295,7 +294,7 @@ def test_transactions_page_empty_state(
     THEN the empty state message should be displayed.
     """
     with patch(
-        "src.entrypoints.flaskapp.blueprints.accounting.routes.services.get_all_transactions",
+        "src.entrypoints.webapp.blueprints.accounting.routes.services.get_all_transactions",
         return_value=[],
     ):
         response = client_logged_in.get(
@@ -351,7 +350,7 @@ def test_transactions_page_handles_unexpected_exception(
     THEN an error flash message should be displayed.
     """
     with patch(
-        "src.entrypoints.flaskapp.blueprints.accounting.routes.services.get_all_transactions",
+        "src.entrypoints.webapp.blueprints.accounting.routes.services.get_all_transactions",
         side_effect=Exception("Database connection failure"),
     ):
         response = client_logged_in.get(
@@ -370,7 +369,7 @@ def test_transactions_page_renders_delete_form(client_logged_in: FlaskClient):
     THEN the response status should be 200 and the delete form and button markers should be present.
     """
     with patch(
-        "src.entrypoints.flaskapp.blueprints.accounting.routes.services.get_all_transactions",
+        "src.entrypoints.webapp.blueprints.accounting.routes.services.get_all_transactions",
         return_value=[],
     ):
         response = client_logged_in.get(
@@ -397,9 +396,9 @@ def test_delete_transaction_post_success(client_logged_in: FlaskClient):
     and services.delete_transaction should be called.
     """
     with patch(
-        "src.entrypoints.flaskapp.blueprints.accounting.routes.services.delete_transaction"
+        "src.entrypoints.webapp.blueprints.accounting.routes.services.delete_transaction"
     ) as mock_delete, patch(
-        "src.entrypoints.flaskapp.blueprints.accounting.routes.services.get_all_transactions",
+        "src.entrypoints.webapp.blueprints.accounting.routes.services.get_all_transactions",
         return_value=[],
     ):
         response = client_logged_in.post(
@@ -422,10 +421,10 @@ def test_delete_transaction_post_handles_value_error(
     THEN the response status should be 200 and a warning flash message displayed.
     """
     with patch(
-        "src.entrypoints.flaskapp.blueprints.accounting.routes.services.delete_transaction",
+        "src.entrypoints.webapp.blueprints.accounting.routes.services.delete_transaction",
         side_effect=ValueError("Invalid transaction ID: -1"),
     ), patch(
-        "src.entrypoints.flaskapp.blueprints.accounting.routes.services.get_all_transactions",
+        "src.entrypoints.webapp.blueprints.accounting.routes.services.get_all_transactions",
         return_value=[],
     ):
         response = client_logged_in.post(
@@ -447,10 +446,10 @@ def test_delete_transaction_post_handles_unexpected_exception(
     THEN the response status should be 200 and a generic error flash message displayed.
     """
     with patch(
-        "src.entrypoints.flaskapp.blueprints.accounting.routes.services.delete_transaction",
+        "src.entrypoints.webapp.blueprints.accounting.routes.services.delete_transaction",
         side_effect=Exception("Database failure"),
     ), patch(
-        "src.entrypoints.flaskapp.blueprints.accounting.routes.services.get_all_transactions",
+        "src.entrypoints.webapp.blueprints.accounting.routes.services.get_all_transactions",
         return_value=[],
     ):
         response = client_logged_in.post(
@@ -474,7 +473,7 @@ def test_delete_transaction_post_handles_form_validation_failure(
     THEN the response status should be 200 and a warning flash message displayed.
     """
     with patch(
-        "src.entrypoints.flaskapp.blueprints.accounting.routes.services.get_all_transactions",
+        "src.entrypoints.webapp.blueprints.accounting.routes.services.get_all_transactions",
         return_value=[],
     ):
         response = client_logged_in.post(

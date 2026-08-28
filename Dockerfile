@@ -65,9 +65,9 @@ RUN sed -i 's/\r$//' ./python_setup.sh && \
 RUN ./python_setup.sh
 
 ENV PATH="/usr/app/venv/bin:${PATH}"
-ENV PYTHONPATH="/usr/app:/usr/app/src/entrypoints/flaskapp:${PYTHONPATH}"
+ENV PYTHONPATH="/usr/app:/usr/app/src/entrypoints/webapp:${PYTHONPATH}"
 
-CMD ["gunicorn", "-b", "0.0.0.0:8080", "src.entrypoints.flaskapp.app:server"]
+CMD ["gunicorn", "-b", "0.0.0.0:8080", "src.entrypoints.webapp.app:server"]
 
 
 FROM base AS cli-app
