@@ -4,8 +4,8 @@ It is a web-based personal double-entry bookkeeping accounting application built
 
 ## 1. Project Setup and Management
 
-- Python version: 3.10. Don't use newer syntax.
-- Dependency management: `pip` with requirements for the app in `requirements.txt` file.
+- Python version: 3.12. Don't use newer syntax.
+- Dependency management: `pip` with requirements for the app in `requirements.txt` file. Explicitly ask for permissions when requiring new libraries.
 - Always ask for approval before implementing changes. Do not commit changes.
 
 
@@ -65,7 +65,7 @@ It is a web-based personal double-entry bookkeeping accounting application built
 
 ## 6. Testing Standards & Conventions
 
--**Pytest**: use pytest library for testing.
+- **Pytest**: use pytest library for testing.
 - **Gherkin-Style Documentation**: Every test function must include a structured Gherkin docstring.
 - **Fixture Reusability**: Use shared fixtures from `tests/conftest.py` (`db_conn`, `postgres_repo`, `repo_with_data`, `client`, `client_logged_in`). For repetitive tests, always use pytest.mark.parametrize instead of writing multiple similar test functions.
 - **Test Isolation**: Database fixtures must clean up after themselves (using `TRUNCATE ... RESTART IDENTITY CASCADE`).
