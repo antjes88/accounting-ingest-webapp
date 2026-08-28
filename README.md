@@ -91,7 +91,7 @@ Unit testing has been integrated into the CI/CD pipeline. A merge will not be ap
 To run the Flask app locally for debugging and testing purposes, you need to load the following Flask Environment Variables in your terminal:
 
 ```bash
-export FLASK_APP=src/entrypoints/flaskapp/app.py:server
+export FLASK_APP=src/entrypoints/webapp/app.py:server
 export FLASK_ENV=development
 export FLASK_DEBUG=1
 ```
@@ -128,7 +128,7 @@ print(generate_password_hash("yourpassword"))
 
 The code architecture of the Python solution is illustrated below. We adopt Onion/Clean Architecture, ensuring that our Business Logic (Domain Model) has no external dependencies. Our goal is to follow SOLID principles, promoting seamless future changes and enhancing code clarity.
 
-The `src/entrypoints/flaskapp/app.py` file is used by the deployed solution as entrypoint. Nonetheless, several entry points could be provided seamlessly because, following Clean Architecture principles, the `main.py` function is treated as the last detail. This ensures that none of the core solution code depends on the entry point; instead, the entry point depends on the core solution code. This design promotes flexibility and allows for the easy addition of new entry points without impacting the existing architecture. Which, in turn, means that the source is independent of the infrastructure. 
+The `src/entrypoints/webapp/app.py` file is used by the deployed solution as entrypoint. Nonetheless, several entry points could be provided seamlessly because, following Clean Architecture principles, the `main.py` function is treated as the last detail. This ensures that none of the core solution code depends on the entry point; instead, the entry point depends on the core solution code. This design promotes flexibility and allows for the easy addition of new entry points without impacting the existing architecture. Which, in turn, means that the source is independent of the infrastructure. 
 
 The Python entrypoint invokes one of the services found in `src/services.py` using specialized **Data Transfer Objects (DTOs)** defined in `src/dto.py`. The services coordinate execution between the Domain Model (`src/model.py`, structured around DDD Aggregate Roots such as `ChartOfAccounts` and `Transaction`) and the Repositories (`src/repository.py`) to ensure data integrity and persistence.
 

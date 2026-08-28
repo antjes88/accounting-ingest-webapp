@@ -3,9 +3,9 @@ import os
 from datetime import timedelta
 from dotenv import load_dotenv
 
-from src.entrypoints.flaskapp.blueprints.home import home_page
-from src.entrypoints.flaskapp.blueprints.auth import login_page
-from src.entrypoints.flaskapp.blueprints.accounting import accounting_pages
+from src.entrypoints.webapp.blueprints.home import home_page
+from src.entrypoints.webapp.blueprints.auth import login_page
+from src.entrypoints.webapp.blueprints.accounting import accounting_pages
 
 if os.environ.get("ISDEVCONTAINER") and not os.environ.get("ISTESTING"):
     load_dotenv(dotenv_path=".env", override=True)  # pragma: no cover

@@ -42,7 +42,7 @@ It is a web-based personal double-entry bookkeeping accounting application built
 
 ## 4. Web Layer & Flask Conventions
 
-- **Modular Blueprints**: Route endpoints are split logically by feature under `src/entrypoints/flaskapp/blueprints/`.
+- **Modular Blueprints**: Route endpoints are split logically by feature under `src/entrypoints/webapp/blueprints/`.
 - **Form Handling with WTForms**:
   - Web forms are located in `forms.py` within their respective blueprint.
   - Each form must implement a `.to_dto()` method to map validated form input into the corresponding DTO in `src/dto.py`.
