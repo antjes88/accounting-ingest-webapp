@@ -1,6 +1,12 @@
 # Accounting-ingest-webapp
 
-This repository is a web-based personal accounting application built with Python and Flask that allows users to securely log in, manage their chart of accounts, ingest financial transactions, delete existing transactions via interactive row selection, and explore ledger records with dynamic date range filtering. At its core, it implements a double-entry bookkeeping system where users can record transactions by specifying a debit account, a credit account, an amount, and a description. It also supports hierarchical chart-of-accounts management (parent and sub-accounts categorized by type, physical status, and archive state).
+This repository is a personal double-entry bookkeeping accounting application built with Python and Flask. It provides two complementary interfaces: an interactive **Web Application** and a **RESTful API** designed for programmatic ledger management.
+
+- **Web Application**: Enables users to securely authenticate, manage hierarchical charts of accounts (categorized by type, physical status, and archive state), record financial transactions via dynamic dependent form dropdowns, explore ledger records with date range filtering, and interactively delete transactions.
+- **RESTful API**: Exposes versioned endpoints (`/api/v1/...`) powered by Flask-Smorest and Flask-JWT-Extended. Currently, its capabilities include:
+  - **JWT Authentication (`POST /api/v1/auth/login`)**: Secure credential authentication and issuance of Bearer JWT access tokens.
+  - **Transaction Ingestion (`POST /api/v1/transactions`)**: Programmatic recording of double-entry transactions with strict Marshmallow schema validation (validating positive amounts, valid integer account identifiers, and ISO dates) and automatic mapping to immutable domain DTOs.
+  - **Self-Documenting Interactive API Docs**: Complete OpenAPI 3.0 specification and interactive Swagger UI documentation hosted at `/docs`.
 
 The backend uses a **Clean / Onion Architecture** and **Domain-Driven Design (DDD)** approach combined with the **Repository pattern** and dedicated **Data Transfer Objects (DTOs)**, ensuring complete decoupling between presentation (Flask/WTForms), domain business rules (Aggregate Roots and Entities), and PostgreSQL persistence infrastructure. Furthermore, the repository is highly structured for continuous integration and deployment, featuring strict static typing, a comprehensive pytest suite for automated testing with Gherkin-style documentation, a Dockerized development container, and GitHub Actions pipelines that handle both testing and Terraform-based infrastructure deployment to Google Cloud Platform.
 
@@ -17,6 +23,14 @@ The Terraform configuration automates the deployment of the Accounting Ingest We
 - **Transaction Exploration & Date Range Filtering**: View and filter ledger records by customizable date ranges (`start_date`, `end_date`).
 - **Interactive Transaction Deletion**: Select individual transaction rows directly within the web table to safely delete transactions and their associated ledger entries.
 - **Visual Feedback & Notification Toasts**: Real-time Bootstrap toasts and flash alerts communicating domain validation errors (`ValueError`), success notices, and system messages.
+
+### RESTful API Features
+
+- **Resource-Oriented Design**: Clean, versioned REST endpoints (`/api/v1/...`) following standard HTTP methods and status codes (`201 Created`, `400 Bad Request`, `401 Unauthorized`, `422 Unprocessable Entity`, `500 Internal Server Error`).
+- **JWT Bearer Token Authentication**: Protected endpoints secured via `Flask-JWT-Extended` with token issuance at `POST /api/v1/auth/login`.
+- **Transaction Management**: Ingest double-entry ledger transactions via `POST /api/v1/transactions`.
+- **Marshmallow Schema Validation & DTO Mapping**: Strict request payload schema validation mapped directly to domain DTOs via `.to_dto()`.
+- **Interactive OpenAPI / Swagger Documentation**: Auto-generated interactive Swagger UI documentation and OpenAPI 3.0 spec accessible at `/docs`.
 
 ### System & Architecture Features
 
@@ -97,14 +111,15 @@ python -m pytest -vv --cov --cov-report=html
 
 Unit testing has been integrated into the CI/CD pipeline. A merge will not be approved unless all tests pass successfully. Additionally, a coverage report is automatically generated and provided as a comment for reference. A Service Account granted with role `roles/cloudsql.client` is required. Current workflow, `.github/workflows/pytest.yaml`, is set to access GCP Project through Workload Identity Provider.
 
-#### Flask App
+#### Web App
 
-To run the Flask app locally for debugging and testing purposes, you need to load the following Flask Environment Variables in your terminal:
+To run the Web app locally for debugging and testing purposes, you need to load the following Flask Environment Variables in your terminal:
 
 ```bash
 export FLASK_APP=src/entrypoints/webapp/app.py:server
 export FLASK_ENV=development
 export FLASK_DEBUG=1
+export FLASK_RUN_PORT=5000
 ```
 
 Then, to start the server:
@@ -114,13 +129,12 @@ flask run
 ```
 
 When run in this mode, the server will automatically restart whenever a file is saved, allowing for seamless testing and development.
-To fully integrate the authentication process, you also need to provide a .env file with the following variables:
+To fully integrate the authentication process, you also need to provide a `.env` file with the following variables:
 
 ```ini
 USERNAME={web username}
 PASSWORD={web password}
 HASHED_PASSWORD={PASSWORD hashed with werkzeug.security.generate_password_hash}
-SECRET_KEY={web page secret key}
 HOST={postgresql server IP Address}
 DATABASE_NAME={development database name}
 USER_NAME={database user name}
@@ -135,13 +149,66 @@ from werkzeug.security import generate_password_hash
 print(generate_password_hash("yourpassword"))
 ```
 
+#### RESTful API
+
+To run the RESTful API locally for debugging and testing purposes, load the following Flask Environment Variables in your terminal:
+
+```bash
+export FLASK_APP=src/entrypoints/api/app.py:server
+export FLASK_ENV=development
+export FLASK_DEBUG=1
+export FLASK_RUN_PORT=5001
+```
+
+Then, to start the API server:
+
+```bash
+flask run
+```
+
+When run in this mode, the server will automatically restart whenever a file is saved, allowing for seamless testing and development.
+To fully integrate the authentication process, you also need to provide a `.env` file with the following variables:
+
+```ini
+USERNAME={web username}
+PASSWORD={web password}
+HASHED_PASSWORD={PASSWORD hashed with werkzeug.security.generate_password_hash}
+HOST={postgresql server IP Address}
+DATABASE_NAME={development database name}
+USER_NAME={database user name}
+USER_PASSWORD={database user password}
+ISTESTING=true
+```
+
+In order to create a hashed password you must use:
+
+```python
+from werkzeug.security import generate_password_hash
+print(generate_password_hash("yourpassword"))
+```
+
+##### API Documentation & Swagger UI
+Once running, the interactive Swagger UI and OpenAPI documentation is available at:
+- **Swagger UI**: `http://localhost:5001/docs`
+- **OpenAPI JSON Spec**: `http://localhost:5001/openapi.json`
+
+##### API Endpoints Overview
+
+In order to create a hashed password you must use:
+
+```python
+from werkzeug.security import generate_password_hash
+print(generate_password_hash("yourpassword"))
+```
+
+
 ## Component Diagram
 
 The code architecture of the Python solution is illustrated below. We adopt Onion/Clean Architecture, ensuring that our Business Logic (Domain Model) has no external dependencies. Our goal is to follow SOLID principles, promoting seamless future changes and enhancing code clarity.
 
-The `src/entrypoints/webapp/app.py` file is used by the deployed solution as entrypoint. Nonetheless, several entry points could be provided seamlessly because, following Clean Architecture principles, the `main.py` function is treated as the last detail. This ensures that none of the core solution code depends on the entry point; instead, the entry point depends on the core solution code. This design promotes flexibility and allows for the easy addition of new entry points without impacting the existing architecture. Which, in turn, means that the source is independent of the infrastructure. 
+The repository provides multiple presentation entrypoints—the web application in [`src/entrypoints/webapp/app.py`](file:///workspaces/accounting-ingest-webapp/src/entrypoints/webapp/app.py) and the RESTful API in [`src/entrypoints/api/app.py`](file:///workspaces/accounting-ingest-webapp/src/entrypoints/api/app.py). Following Clean Architecture principles, entrypoints are treated as delivery mechanisms and details. This ensures that none of the core business logic depends on presentation frameworks; instead, entrypoints depend on the core application services. This design promotes flexibility and allows adding or evolving entrypoints (e.g., CLI tools in `src/entrypoints/cli`) without modifying domain logic or database infrastructure.
 
-The Python entrypoint invokes one of the services found in `src/services.py` using specialized **Data Transfer Objects (DTOs)** defined in `src/dto.py`. The services coordinate execution between the Domain Model (`src/model.py`, structured around DDD Aggregate Roots such as `ChartOfAccounts` and `Transaction`) and the Repositories (`src/repository.py`) to ensure data integrity and persistence.
+The Python entrypoints invoke application services in [`src/services.py`](file:///workspaces/accounting-ingest-webapp/src/services.py) using specialized **Data Transfer Objects (DTOs)** defined in [`src/dto.py`](file:///workspaces/accounting-ingest-webapp/src/dto.py). The services coordinate execution between the Domain Model ([`src/model.py`](file:///workspaces/accounting-ingest-webapp/src/model.py), structured around DDD Aggregate Roots such as `ChartOfAccounts` and `Transaction`) and the Repositories ([`src/repository.py`](file:///workspaces/accounting-ingest-webapp/src/repository.py)) to ensure data integrity and persistence.
 
 <p align="center">
     <img src="docs/images/components_diagram.png" alt="Components Diagram">

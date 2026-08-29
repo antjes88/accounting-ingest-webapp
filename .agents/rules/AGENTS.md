@@ -13,7 +13,7 @@ It is a web-based personal double-entry bookkeeping accounting application built
 
  - **Architectural Philosophy**:  The repository strictly follows **Clean / Onion Architecture** and **Domain-Driven Design (DDD)** principles:
     ```
-    [ Entrypoints: Flask WebApp / CLI ]
+    [ Entrypoints: Flask WebApp / CLI / RESTful API ]
                     │ (DTOs)
                     ▼
           [ Application Services ]
@@ -71,3 +71,11 @@ It is a web-based personal double-entry bookkeeping accounting application built
 - **Test Isolation**: Database fixtures must clean up after themselves (using `TRUNCATE ... RESTART IDENTITY CASCADE`).
 - **Mocking External Boundaries**: Use `unittest.mock.patch` to simulate service failures or edge-case exceptions in web route testing. Restrict to cases where direct testing is not possible. Use humble pattern.
 - **High Test Coverage**: Maintain comprehensive coverage across domain models, DTOs, repositories, services, and web routes.
+
+
+## 7. API Layer
+
+- **RESTful API**
+- **Modular Blueprints**: Route endpoints are split logically by feature under `src/entrypoints/api/blueprints/`.
+- **Schema Handling with marshmallow**:
+  - Each schema must implement a `.to_dto()` method to map validated schema input into the corresponding DTO in `src/dto.py`.

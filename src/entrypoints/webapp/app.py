@@ -1,5 +1,6 @@
-from flask import Flask, session, request, redirect, url_for
+import secrets
 import os
+from flask import Flask, session, request, redirect, url_for
 from datetime import timedelta
 from dotenv import load_dotenv
 
@@ -14,7 +15,7 @@ if os.environ.get("ISDEVCONTAINER") and not os.environ.get("ISTESTING"):
 class Config:
     API_TITLE = "Accounting Ingest Web App"
     API_VERSION = "v1"
-    SECRET_KEY = os.getenv("SECRET_KEY", "super-secret-session-change-me")
+    SECRET_KEY = os.getenv("SECRET_KEY", secrets.token_bytes(32))
     PERMANENT_SESSION_LIFETIME = timedelta(minutes=5)
     SESSION_REFRESH_EACH_REQUEST = True
 

@@ -42,6 +42,7 @@ COPY --chown=app:app ./requirements.txt .
 COPY --chown=app:app ./.devcontainer/dev-requirements.txt .
 COPY --chown=app:app ./.devcontainer/cli-requirements.txt .
 COPY --chown=app:app ./.devcontainer/webapp-requirements.txt .
+COPY --chown=app:app ./.devcontainer/api-requirements.txt .
 COPY --chown=app:app ./.devcontainer/python_setup.sh .
 
 RUN sed -i 's/\r$//' ./python_setup.sh && \
@@ -76,6 +77,25 @@ ENV PATH="/usr/app/venv/bin:${PATH}"
 ENV PYTHONPATH="/usr/app:/usr/app/src/entrypoints/webapp:${PYTHONPATH}"
 
 CMD ["gunicorn", "-b", "0.0.0.0:8080", "src.entrypoints.webapp.app:server"]
+
+
+FROM base AS api
+USER 10000
+WORKDIR /usr/app
+
+COPY --chown=app:app ./src ./src
+COPY --chown=app:app ./requirements.txt .
+COPY --chown=app:app ./.devcontainer/api-requirements.txt .
+COPY --chown=app:app ./.devcontainer/python_setup.sh .
+
+RUN sed -i 's/\r$//' ./python_setup.sh && \
+    chmod +x ./python_setup.sh
+RUN ./python_setup.sh
+
+ENV PATH="/usr/app/venv/bin:${PATH}"
+ENV PYTHONPATH="/usr/app:/usr/app/src/entrypoints/api:${PYTHONPATH}"
+
+CMD ["gunicorn", "-b", "0.0.0.0:8080", "src.entrypoints.api.app:server"]
 
 
 FROM base AS cli-app
