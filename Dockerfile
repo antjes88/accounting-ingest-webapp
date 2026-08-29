@@ -17,7 +17,14 @@ RUN mv terraform /usr/bin/
 RUN rm terraform_1.6.6_linux_amd64.zip
 
 
-FROM terraform AS gcloud
+FROM terraform as npx
+# Install npx
+RUN apt-get install -y curl gnupg \
+    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs \
+    && rm -rf /var/lib/apt/lists/*
+
+FROM npx AS gcloud
 # Install gcloud
 USER 10000
 WORKDIR /usr/app
@@ -26,6 +33,7 @@ COPY --chown=app:app ./.devcontainer/install_gcloud.sh .
 RUN sed -i 's/\r$//' ./install_gcloud.sh && \
     chmod +x ./install_gcloud.sh
 RUN ./install_gcloud.sh
+
 
 FROM gcloud AS devcontainer
 ENV ISDEVCONTAINER=true

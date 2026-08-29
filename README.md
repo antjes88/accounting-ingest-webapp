@@ -56,6 +56,17 @@ git config --global user.name "your github account name"
 git config --global user.email "your github account email"
 ```
 
+### Configure MCP Tokens
+
+To configure MCP server tokens (such as Context7) without committing sensitive credentials to version control, create a local script at `.devcontainer/load_mcp_config_tokens.sh` (this file is ignored by Git):
+
+```bash
+#!/bin/bash
+
+export MCP_CONTEXT7_TOKEN="your_context7_token_here"
+```
+
+
 ## Database Setup
 
 To run the application locally, you will need to create and configure a development database. Detailed instructions on how to build the database solution, create the necessary tables using the provided scaffolding script, and set up user permissions can be found in the `database/README.md` file.

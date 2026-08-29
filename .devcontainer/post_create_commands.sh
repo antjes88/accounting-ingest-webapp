@@ -8,8 +8,17 @@ gcloud auth application-default login
 
 FILE="./.devcontainer/git_config.sh"
 if [ -f "$FILE" ]; then
+    sed -i 's/\r$//' "$FILE"
     chmod +x "$FILE"
     "$FILE"
 else
     echo "$FILE not found. Follow instructions in README.md to set up git config. ### Configure Git"
+fi
+
+FILE="./.devcontainer/load_mcp_config_tokens.sh"
+if [ -f "$FILE" ]; then
+    sed -i 's/\r$//' "$FILE"
+    chmod +x "$FILE"
+else
+    echo "$FILE not found. Follow instructions in README.md to set up mcp config tokens. ### Configure MCP Tokens"
 fi
