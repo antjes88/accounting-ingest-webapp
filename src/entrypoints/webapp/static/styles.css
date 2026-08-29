@@ -1,41 +1,369 @@
-body {
-    background-color: #f8f9fa;
-    color: #333;
+/* ==========================================================================
+   Design Tokens & Variables
+   ========================================================================== */
+:root {
+    --bg-canvas: #f8fafc;
+    --bg-surface: #ffffff;
+    --bg-surface-elevated: #ffffff;
+
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --text-muted: #64748b;
+
+    --border-subtle: #e2e8f0;
+    --border-strong: #cbd5e1;
+
+    --color-primary: #0f172a;
+    --color-primary-hover: #1e293b;
+    --color-primary-active: #334155;
+
+    --color-debit: #1d4ed8;
+    --color-debit-bg: #eff6ff;
+    --color-debit-border: #bfdbfe;
+
+    --color-credit: #047857;
+    --color-credit-bg: #ecfdf5;
+    --color-credit-border: #a7f3d0;
+
+    --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-mono: 'JetBrains Mono', 'SFMono-Regular', Menlo, Monaco, Consolas, monospace;
+
+    --shadow-sm: 0 1px 2px 0 rgba(15, 23, 42, 0.04);
+    --shadow-card: 0 1px 3px 0 rgba(15, 23, 42, 0.06), 0 1px 2px -1px rgba(15, 23, 42, 0.04);
+    --shadow-card-hover: 0 4px 6px -1px rgba(15, 23, 42, 0.08), 0 2px 4px -2px rgba(15, 23, 42, 0.06);
+    --shadow-dropdown: 0 10px 15px -3px rgba(15, 23, 42, 0.08), 0 4px 6px -4px rgba(15, 23, 42, 0.04);
+
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 14px;
 }
 
+/* ==========================================================================
+   Base Layout & Typography
+   ========================================================================== */
+body {
+    background-color: var(--bg-canvas);
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    letter-spacing: -0.01em;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    color: var(--text-primary);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+}
+
+.font-mono-num {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+}
+
+/* ==========================================================================
+   Navbar
+   ========================================================================== */
+.navbar-custom {
+    background-color: var(--bg-surface);
+    border-bottom: 1px solid var(--border-subtle);
+    padding: 0.85rem 0;
+}
+
+.brand-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-sm);
+    background-color: var(--color-primary);
+    color: #fff;
+    font-size: 0.9rem;
+    font-weight: 700;
+    margin-right: 0.6rem;
+    box-shadow: 0 2px 4px rgba(15, 23, 42, 0.15);
+}
+
+.navbar-brand {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--text-primary) !important;
+    display: flex;
+    align-items: center;
+}
+
+.nav-link-custom {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    font-weight: 500;
+    padding: 0.4rem 0.8rem;
+    border-radius: var(--radius-sm);
+    text-decoration: none;
+    transition: all 0.15s ease-in-out;
+}
+
+.nav-link-custom:hover {
+    color: var(--text-primary);
+    background-color: var(--bg-canvas);
+}
+
+/* ==========================================================================
+   Cards & Surfaces
+   ========================================================================== */
 .card {
-    border: 1px solid #ddd;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-    border-radius: 8px;
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-card);
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
 .card-header {
-    background-color: #f5f5f5;
-    font-weight: 500;
+    background-color: transparent;
+    border-bottom: 1px solid var(--border-subtle);
+    padding: 1rem 1.25rem;
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--text-primary);
+}
+
+/* Action Cards in Menu */
+.action-card {
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    background-color: var(--bg-surface);
+    box-shadow: var(--shadow-card);
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    text-decoration: none;
+    display: block;
+    color: inherit;
+    height: 100%;
+}
+
+.action-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-card-hover);
+    border-color: var(--border-strong);
+    color: inherit;
+}
+
+.action-card-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius-md);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    margin-bottom: 1rem;
+}
+
+/* Voucher cards in New Transaction */
+.voucher-card-debit {
+    border-top: 3px solid var(--color-debit);
+}
+
+.voucher-card-credit {
+    border-top: 3px solid var(--color-credit);
+}
+
+/* ==========================================================================
+   Forms & Inputs
+   ========================================================================== */
+.form-label {
+    font-size: 0.825rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 0.4rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.form-control,
+.form-select {
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    padding: 0.55rem 0.85rem;
+    font-size: 0.925rem;
+    color: var(--text-primary);
+    background-color: var(--bg-surface);
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+    outline: none;
+}
+
+.form-control:disabled,
+.form-select:disabled {
+    background-color: #f1f5f9;
+    color: #94a3b8;
+    cursor: not-allowed;
+}
+
+/* Prominent currency input */
+.input-amount {
+    font-family: var(--font-mono);
+    font-size: 1.15rem;
+    font-weight: 600;
+}
+
+/* ==========================================================================
+   Buttons
+   ========================================================================== */
+.btn {
+    font-weight: 600;
+    font-size: 0.9rem;
+    border-radius: var(--radius-sm);
+    padding: 0.55rem 1.1rem;
+    transition: all 0.15s ease-in-out;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
 }
 
 .btn-primary {
-    background-color: #111;
-    border-color: #111;
+    background-color: var(--color-primary);
+    border-color: var(--color-primary);
+    color: #ffffff;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.12);
 }
 
 .btn-primary:hover {
-    background-color: #333;
-    border-color: #333;
+    background-color: var(--color-primary-hover);
+    border-color: var(--color-primary-hover);
+    color: #ffffff;
 }
 
 .btn-primary:active {
-    background-color: #555 !important;
-    border-color: #555 !important;
-    transform: scale(0.95) !important;
-    box-shadow: none !important;
+    background-color: var(--color-primary-active) !important;
+    border-color: var(--color-primary-active) !important;
+    transform: translateY(1px);
 }
 
 .btn-outline-secondary {
-    border-color: #999;
-    color: #555;
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border-strong);
+    color: var(--text-secondary);
 }
 
 .btn-outline-secondary:hover {
-    background-color: #eee;
+    background-color: var(--bg-canvas);
+    border-color: var(--text-secondary);
+    color: var(--text-primary);
+}
+
+.btn-outline-primary {
+    border-color: var(--border-strong);
+    color: var(--text-primary);
+    background-color: var(--bg-surface);
+}
+
+.btn-outline-primary:hover {
+    background-color: var(--color-primary);
+    border-color: var(--color-primary);
+    color: #ffffff;
+}
+
+.btn-danger {
+    background-color: #dc2626;
+    border-color: #dc2626;
+}
+
+.btn-danger:hover {
+    background-color: #b91c1c;
+    border-color: #b91c1c;
+}
+
+/* ==========================================================================
+   Ledger Table
+   ========================================================================== */
+.ledger-table {
+    border-collapse: separate;
+    border-spacing: 0;
+    width: 100%;
+}
+
+.ledger-table thead th {
+    background-color: #f8fafc;
+    color: var(--text-secondary);
+    font-size: 0.775rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.ledger-table tbody td {
+    padding: 0.85rem 1rem;
+    border-bottom: 1px solid var(--border-subtle);
+    font-size: 0.9rem;
+    vertical-align: middle;
+}
+
+.ledger-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.ledger-table tbody tr {
+    transition: background-color 0.12s ease;
+}
+
+.ledger-table tbody tr:hover {
+    background-color: #f8fafc;
+}
+
+/* Interactive row selection for deletion */
+.ledger-table tbody tr.table-active {
+    background-color: #f1f5f9 !important;
+}
+
+.ledger-table tbody tr.table-active td:first-child {
+    box-shadow: inset 4px 0 0 var(--color-primary);
+}
+
+/* Badges for Account Roles */
+.badge-debit {
+    background-color: var(--color-debit-bg);
+    color: var(--color-debit);
+    border: 1px solid var(--color-debit-border);
+    font-weight: 600;
+    font-size: 0.8rem;
+    padding: 0.25rem 0.6rem;
+    border-radius: var(--radius-sm);
+    display: inline-block;
+}
+
+.badge-credit {
+    background-color: var(--color-credit-bg);
+    color: var(--color-credit);
+    border: 1px solid var(--color-credit-border);
+    font-weight: 600;
+    font-size: 0.8rem;
+    padding: 0.25rem 0.6rem;
+    border-radius: var(--radius-sm);
+    display: inline-block;
+}
+
+/* ==========================================================================
+   Toasts & Alerts
+   ========================================================================== */
+.toast-custom {
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-dropdown);
+    font-size: 0.9rem;
+    font-weight: 500;
+    border: none;
 }

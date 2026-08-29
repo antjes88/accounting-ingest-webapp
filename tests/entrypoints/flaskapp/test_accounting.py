@@ -303,7 +303,7 @@ def test_transactions_page_empty_state(
         )
 
     assert response.status_code == 200
-    assert b"No transactions found." in response.data
+    assert b"No transactions found for the selected period." in response.data
 
 
 def test_transactions_page_with_valid_date_filter(
@@ -338,7 +338,7 @@ def test_transactions_page_with_non_matching_date_filter(
     )
 
     assert response.status_code == 200
-    assert b"No transactions found." in response.data
+    assert b"No transactions found for the selected period." in response.data
 
 
 def test_transactions_page_handles_unexpected_exception(

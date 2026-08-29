@@ -127,7 +127,7 @@ class NewAccountForm(FlaskForm):
         id="father_account",
     )
     is_physical = SelectField(
-        "Is Physical Account?",
+        "Is Physical?",
         choices=[("True", "Yes"), ("False", "No")],
         validators=[DataRequired()],
         id="is_physical",
