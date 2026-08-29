@@ -37,7 +37,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Fetch GCP Key
-        uses: google-github-actions/auth@6fc4af4b145ae7821d527454aa9bd537d1f2dc5f # v2.1.7
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
         with:
           create_credentials_file: true
           workload_identity_provider: "${{ secrets.WORKLOAD_IDENTITY_PROVIDER }}"
@@ -60,7 +60,7 @@ jobs:
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
           if [ -f .devcontainer/dev-requirements.txt ]; then pip install -r .devcontainer/dev-requirements.txt; fi
           if [ -f .devcontainer/webapp-requirements.txt ]; then pip install -r .devcontainer/webapp-requirements.txt; fi
-          if [ -f .devcontainer/api-requirements.txt ]; then pip install -r .devcontainer/webapp-requirements.txt; fi
+          if [ -f .devcontainer/api-requirements.txt ]; then pip install -r .devcontainer/api-requirements.txt; fi
 
       - name: Test with pytest
         run: |
