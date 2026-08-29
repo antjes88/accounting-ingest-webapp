@@ -1,9 +1,12 @@
 {% extends 'base.html' %}
-{% block title %}Transactions{% endblock %}
+{% block title %}Transactions | LedgerApp{% endblock %}
 {% block content %}
 <!--transactions_list this comment is to check that it is reached on test-->
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2>Transactions</h2>
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+    <div>
+        <h2 class="h3 fw-bold mb-1">Transaction Ledger</h2>
+        <p class="text-muted small mb-0">Complete historical journal entries and account transfers.</p>
+    </div>
     <div class="d-flex gap-2 align-items-center">
         <form id="delete-transaction-form" method="POST" action="{{ url_for('accounting_pages.delete_transaction') }}"
             class="d-inline">
@@ -12,32 +15,32 @@
             {{ delete_form.transaction_id(id="selected-transaction-id") }}
             <button id="delete-btn" type="submit" class="btn btn-danger d-none">
                 <!--delete_transaction_button this comment is to check that it is reached on test-->
-                Delete Transaction
+                Delete Selected
             </button>
         </form>
         <a href="{{ url_for('accounting_pages.new_transaction') }}" class="btn btn-primary">
             + New Transaction
         </a>
-        <a href="{{ url_for('accounting_pages.new_account') }}" class="btn btn-primary">
+        <a href="{{ url_for('accounting_pages.new_account') }}" class="btn btn-outline-secondary">
             + New Account
         </a>
     </div>
 </div>
 
-<!-- Filter Form -->
+<!-- Filter Toolbar -->
 <div class="card shadow-sm mb-4">
-    <div class="card-body">
+    <div class="card-body py-3">
         <form method="GET" action="{{ url_for('accounting_pages.list_transactions') }}" class="row g-3 align-items-end">
             <div class="col-md-4">
-                <label for="start_date" class="form-label fw-bold">From Date</label>
+                <label for="start_date" class="form-label">From Date</label>
                 {{ form.start_date(class="form-control", type="date", id="start_date") }}
             </div>
             <div class="col-md-4">
-                <label for="end_date" class="form-label fw-bold">To Date</label>
+                <label for="end_date" class="form-label">To Date</label>
                 {{ form.end_date(class="form-control", type="date", id="end_date") }}
             </div>
             <div class="col-md-4 d-flex gap-2">
-                <button type="submit" class="btn btn-primary flex-grow-1">Filter</button>
+                <button type="submit" class="btn btn-primary flex-grow-1">Apply Filter</button>
                 <a href="{{ url_for('accounting_pages.list_transactions') }}"
                     class="btn btn-outline-secondary">Reset</a>
             </div>
@@ -45,39 +48,40 @@
     </div>
 </div>
 
-<!-- Transactions Table -->
-<div class="card shadow-sm">
-    <div class="card-body">
+<!-- Transactions Ledger Table -->
+<div class="card shadow-sm overflow-hidden">
+    <div class="card-body p-0">
         {% if transactions %}
         <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="table-light">
+            <table class="ledger-table align-middle mb-0">
+                <thead>
                     <tr>
                         <th scope="col" class="text-center" style="width: 5%;">#</th>
                         <th scope="col" style="width: 12%;">Date</th>
                         <th scope="col">Description</th>
-                        <th scope="col" style="width: 20%;">Debit Account</th>
-                        <th scope="col" style="width: 20%;">Credit Account</th>
+                        <th scope="col" style="width: 22%;">Debit Account</th>
+                        <th scope="col" style="width: 22%;">Credit Account</th>
                         <th scope="col" class="text-end" style="width: 15%;">Amount</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for t in transactions %}
                     <tr class="transaction-row" data-transaction-id="{{ t.id }}" style="cursor: pointer;">
-                        <td class="text-center text-muted fw-bold">{{ t.id }}</td>
-                        <td>{{ t.date.strftime('%Y-%m-%d') if t.date else '' }}</td>
-                        <td>{{ t.description or '-' }}</td>
+                        <td class="text-center text-muted font-mono-num fw-bold small">{{ t.id }}</td>
+                        <td class="font-mono-num small text-secondary">{{ t.date.strftime('%Y-%m-%d') if t.date else ''
+                            }}</td>
+                        <td class="fw-medium text-dark">{{ t.description or '-' }}</td>
                         <td>
-                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1">
+                            <span class="badge-debit">
                                 {{ t.debit_account_name }}
                             </span>
                         </td>
                         <td>
-                            <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
+                            <span class="badge-credit">
                                 {{ t.credit_account_name }}
                             </span>
                         </td>
-                        <td class="text-end fw-bold text-dark">
+                        <td class="text-end font-mono-num fw-bold text-dark">
                             £{{ "{:,.2f}".format(t.amount) }}
                         </td>
                     </tr>
@@ -87,7 +91,7 @@
         </div>
         {% else %}
         <div class="text-center py-5">
-            <p class="text-muted mb-3">No transactions found.</p>
+            <p class="text-muted mb-3">No transactions found for the selected period.</p>
             <a href="{{ url_for('accounting_pages.new_transaction') }}" class="btn btn-primary">
                 Record Transaction
             </a>
