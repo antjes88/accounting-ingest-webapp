@@ -111,6 +111,3 @@ class TransactionCollection(views.MethodView):
                 500,
                 message="An unexpected error occurred while recording the transaction.",
             )
-
-
-InvoiceCollection = TransactionCollection
