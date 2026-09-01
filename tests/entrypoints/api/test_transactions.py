@@ -45,6 +45,7 @@ def test_create_transaction_success(
 
     assert response.status_code == 201
     assert json_data["message"] == "Transaction recorded successfully"
+    assert json_data["transaction_id"] == transaction_id
     assert repo_with_data.postgres_client.query(
         f"SELECT transaction_id, transaction_date, transaction_description "
         f"FROM {repo_with_data.transactions_table} WHERE transaction_id = {transaction_id}"

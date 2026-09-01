@@ -40,12 +40,15 @@ def new_transaction():
     if form.validate_on_submit():
 
         try:
-            services.record_new_transaction(
+            transaction_id = services.record_new_transaction(
                 repo=repo,
                 transaction_dto=form.to_dto(),
             )
 
-            flash("Transaction recorded successfully!", "success")
+            flash(
+                f"Transaction recorded successfully! Transaction ID: {transaction_id}",
+                "success",
+            )
             form.account_debit.data = "-- Select an Account --"
             form.amount.data = 0.0
 

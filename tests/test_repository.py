@@ -103,14 +103,14 @@ def test_record_new_transaction(repo_with_data: PostgresRepository):
     """
     GIVEN a PostgresRepository with existing data and a valid Transaction object
     WHEN the post_new_transaction method is called with the Transaction object
-    THEN the transaction should be successfully recorded in the database,
+    THEN the transaction should be successfully recorded in the database and its ID returned,
     and the transaction details and ledger entries should match the provided data.
     """
     transaction_date = date(2024, 6, 1)
     description = "Test Create Transaction"
     amount = Decimal("200.00")
 
-    repo_with_data.post_new_transaction(
+    transaction_id = repo_with_data.post_new_transaction(
         model.Transaction(
             id=None,
             date=transaction_date,
@@ -129,8 +129,8 @@ def test_record_new_transaction(repo_with_data: PostgresRepository):
             ],
         )
     )
-    transaction_id = repo_with_data.get_max_transaction_id()
 
+    assert transaction_id == repo_with_data.get_max_transaction_id()
     assert repo_with_data.postgres_client.query(
         f"SELECT transaction_id, transaction_date, transaction_description FROM {repo_with_data.transactions_table} WHERE transaction_id = {transaction_id}"
     ) == [(transaction_id, transaction_date, description)]

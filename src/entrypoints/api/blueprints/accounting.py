@@ -75,6 +75,10 @@ CreateTransaction = CreateTransactionSchema
 
 
 class TransactionCreatedResponseSchema(Schema):
+    transaction_id = fields.Integer(
+        required=True,
+        metadata={"description": "Unique identifier of the created transaction"},
+    )
     message = fields.String(
         required=True,
         dump_default="Transaction recorded successfully",
@@ -88,18 +92,21 @@ class TransactionCollection(views.MethodView):
     @jwt_required()
     @accounting.arguments(CreateTransactionSchema)
     @accounting.response(201, TransactionCreatedResponseSchema)
-    def post(self, transaction_data: dict[str, Any]) -> dict[str, str]:
+    def post(self, transaction_data: dict[str, Any]) -> dict[str, Any]:
         """Create and record a new transaction"""
         schema = CreateTransactionSchema()
         dto = schema.to_dto(transaction_data)
         repo = _get_repository()
 
         try:
-            services.record_new_transaction(
+            transaction_id = services.record_new_transaction(
                 repo=repo,
                 transaction_dto=dto,
             )
-            return {"message": "Transaction recorded successfully"}
+            return {
+                "transaction_id": transaction_id,
+                "message": "Transaction recorded successfully",
+            }
 
         except ValueError as err:
             logger.warning(f"Validation error recording transaction: {err}")

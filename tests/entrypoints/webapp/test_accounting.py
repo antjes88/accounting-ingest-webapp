@@ -76,7 +76,10 @@ def test_new_transaction_post(
     transaction_id = repo_with_data.get_max_transaction_id()
 
     assert response.status_code == 200
-    assert b"Transaction recorded successfully!" in response.data
+    assert (
+        f"Transaction recorded successfully! Transaction ID: {transaction_id}".encode()
+        in response.data
+    )
     assert repo_with_data.postgres_client.query(
         f"SELECT transaction_id, transaction_date, transaction_description FROM {repo_with_data.transactions_table} WHERE transaction_id = {transaction_id}"
     ) == [(transaction_id, transaction_date, description)]
