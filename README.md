@@ -5,7 +5,7 @@ This repository is a personal double-entry bookkeeping accounting application bu
 - **Web Application**: Enables users to securely authenticate, manage hierarchical charts of accounts (categorized by type, physical status, and archive state), record financial transactions via dynamic dependent form dropdowns, explore ledger records with date range filtering, and interactively delete transactions.
 - **RESTful API**: Exposes versioned endpoints (`/api/v1/...`) powered by Flask-Smorest and Flask-JWT-Extended. Currently, its capabilities include:
   - **JWT Authentication (`POST /api/v1/auth/login`)**: Secure credential authentication and issuance of Bearer JWT access tokens.
-  - **Transaction Ingestion (`POST /api/v1/transactions`)**: Programmatic recording of double-entry transactions with strict Marshmallow schema validation (validating positive amounts, valid integer account identifiers, and ISO dates) and automatic mapping to immutable domain DTOs.
+  - **Transaction Ingestion (`POST /api/v1/transactions`)**: Programmatic recording of double-entry transactions with strict Marshmallow schema validation (validating positive amounts, valid integer account identifiers, and ISO dates) and automatic mapping to immutable domain DTOs, returning the assigned `transaction_id` upon creation.
   - **Self-Documenting Interactive API Docs**: Complete OpenAPI 3.0 specification and interactive Swagger UI documentation hosted at `/docs`.
 
 The backend uses a **Clean / Onion Architecture** and **Domain-Driven Design (DDD)** approach combined with the **Repository pattern** and dedicated **Data Transfer Objects (DTOs)**, ensuring complete decoupling between presentation (Flask/WTForms), domain business rules (Aggregate Roots and Entities), and PostgreSQL persistence infrastructure. Furthermore, the repository is highly structured for continuous integration and deployment, featuring strict static typing, a comprehensive pytest suite for automated testing with Gherkin-style documentation, a Dockerized development container, and GitHub Actions pipelines that handle both testing and Terraform-based infrastructure deployment to Google Cloud Platform.
@@ -22,13 +22,13 @@ The Terraform configuration automates the deployment of the Accounting Ingest We
 - **Dynamic Dependent Form Dropdowns**: Real-time client-side dropdown filtering for postable and parent accounts based on selected account types without requiring page reloads.
 - **Transaction Exploration & Date Range Filtering**: View and filter ledger records by customizable date ranges (`start_date`, `end_date`).
 - **Interactive Transaction Deletion**: Select individual transaction rows directly within the web table to safely delete transactions and their associated ledger entries.
-- **Visual Feedback & Notification Toasts**: Real-time Bootstrap toasts and flash alerts communicating domain validation errors (`ValueError`), success notices, and system messages.
+- **Visual Feedback & Notification Toasts**: Real-time Bootstrap toasts and flash alerts communicating domain validation errors (`ValueError`), success notices (including created transaction identifiers), and system messages.
 
 ### RESTful API Features
 
 - **Resource-Oriented Design**: Clean, versioned REST endpoints (`/api/v1/...`) following standard HTTP methods and status codes (`201 Created`, `400 Bad Request`, `401 Unauthorized`, `422 Unprocessable Entity`, `500 Internal Server Error`).
 - **JWT Bearer Token Authentication**: Protected endpoints secured via `Flask-JWT-Extended` with token issuance at `POST /api/v1/auth/login`.
-- **Transaction Management**: Ingest double-entry ledger transactions via `POST /api/v1/transactions`.
+- **Transaction Management**: Ingest double-entry ledger transactions via `POST /api/v1/transactions`, returning the generated `transaction_id` and confirmation message on `201 Created` responses.
 - **Marshmallow Schema Validation & DTO Mapping**: Strict request payload schema validation mapped directly to domain DTOs via `.to_dto()`.
 - **Interactive OpenAPI / Swagger Documentation**: Auto-generated interactive Swagger UI documentation and OpenAPI 3.0 spec accessible at `/docs`.
 
@@ -194,12 +194,31 @@ Once running, the interactive Swagger UI and OpenAPI documentation is available 
 
 ##### API Endpoints Overview
 
-In order to create a hashed password you must use:
+| Method | Endpoint | Description | Auth | Response Codes |
+|---|---|---|---|---|
+| `POST` | `/api/v1/auth/login` | Authenticate user credentials and receive JWT access token | None | `200 OK`, `401 Unauthorized`, `422 Unprocessable Entity` |
+| `POST` | `/api/v1/transactions` | Create and record a new double-entry transaction | Bearer JWT | `201 Created`, `400 Bad Request`, `401 Unauthorized`, `422 Unprocessable Entity`, `500 Internal Server Error` |
 
-```python
-from werkzeug.security import generate_password_hash
-print(generate_password_hash("yourpassword"))
-```
+**Example: Ingesting a Transaction**
+
+- **Request** (`POST /api/v1/transactions`):
+  ```json
+  {
+    "date": "2024-06-15",
+    "amount": "250.50",
+    "debit_account_id": 2,
+    "credit_account_id": 4,
+    "description": "Office supplies"
+  }
+  ```
+
+- **Response** (`201 Created`):
+  ```json
+  {
+    "transaction_id": 12,
+    "message": "Transaction recorded successfully"
+  }
+  ```
 
 
 ## Component Diagram

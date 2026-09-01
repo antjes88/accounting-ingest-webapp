@@ -79,7 +79,7 @@ ENV PYTHONPATH="/usr/app:/usr/app/src/entrypoints/webapp:${PYTHONPATH}"
 CMD ["gunicorn", "-b", "0.0.0.0:8080", "src.entrypoints.webapp.app:server"]
 
 
-FROM base AS api
+FROM base AS web-api
 USER 10000
 WORKDIR /usr/app
 

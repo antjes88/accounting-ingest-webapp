@@ -6,7 +6,7 @@ import pytest
 from flask.testing import FlaskClient
 
 from src.dto import CreateTransactionDTO
-from src.entrypoints.api.blueprints.accounting import CreateTransactionSchema
+from src.entrypoints.webapi.blueprints.accounting import CreateTransactionSchema
 from src.repository import PostgresRepository
 from src.model import EntryType
 
@@ -229,7 +229,7 @@ def test_create_transaction_handles_unexpected_exception(
     }
 
     with patch(
-        "src.entrypoints.api.blueprints.accounting.services.record_new_transaction",
+        "src.entrypoints.webapi.blueprints.accounting.services.record_new_transaction",
         side_effect=Exception("Unexpected database outage"),
     ):
         response = api_client.post(

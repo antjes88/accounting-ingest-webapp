@@ -5,8 +5,8 @@ from flask_smorest import Api
 from flask_jwt_extended import JWTManager
 from dotenv import load_dotenv
 
-from src.entrypoints.api.blueprints.accounting import accounting
-from src.entrypoints.api.blueprints.authentication import login
+from src.entrypoints.webapi.blueprints.accounting import accounting
+from src.entrypoints.webapi.blueprints.authentication import login
 
 if os.environ.get("ISDEVCONTAINER") and not os.environ.get("ISTESTING"):
     load_dotenv(dotenv_path=".env", override=True)  # pragma: no cover

@@ -3,7 +3,7 @@ import pytest
 from flask.testing import FlaskClient
 from flask_jwt_extended import create_access_token
 
-from src.entrypoints.api.app import server
+from src.entrypoints.webapi.app import server
 
 
 @pytest.fixture(scope="function")
