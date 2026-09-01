@@ -50,7 +50,7 @@ jobs:
           sleep 15
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@8d9ed9ac5c53483de85588cdf95a591a75ab9f55 # v5
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -67,7 +67,7 @@ jobs:
           python -m pytest -vv --junitxml=pytest.xml --cov-report "xml:coverage.xml" --cov=src tests/ --cov-fail-under=95
 
       - name: Post comment
-        uses: Mishakav/pytest-coverage-comment@81882822c5b22af01f91bd3eacb1cefb6ad73dc2 # v1.1.53
+        uses: Mishakav/pytest-coverage-comment@432ac90e8d345c93e1d90ee0838b35913abc9c9b # v1.12.2
         with:
           pytest-xml-coverage-path: coverage.xml
           junitxml-path: ./pytest.xml
