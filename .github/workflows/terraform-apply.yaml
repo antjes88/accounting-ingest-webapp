@@ -6,9 +6,7 @@ permissions:
   pull-requests: write
 
 on:
-  # TODO: uncomment
-  # push:
-  pull_request:
+  push:
     branches:
       - main
 

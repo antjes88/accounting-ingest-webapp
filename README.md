@@ -10,7 +10,7 @@ This repository is a personal double-entry bookkeeping accounting application bu
 
 The backend uses a **Clean / Onion Architecture** and **Domain-Driven Design (DDD)** approach combined with the **Repository pattern** and dedicated **Data Transfer Objects (DTOs)**, ensuring complete decoupling between presentation (Flask/WTForms), domain business rules (Aggregate Roots and Entities), and PostgreSQL persistence infrastructure. Furthermore, the repository is highly structured for continuous integration and deployment, featuring strict static typing, a comprehensive pytest suite for automated testing with Gherkin-style documentation, a Dockerized development container, and GitHub Actions pipelines that handle both testing and Terraform-based infrastructure deployment to Google Cloud Platform.
 
-The Terraform configuration automates the deployment of the Accounting Ingest Web App infrastructure on Google Cloud Platform, consisting of a serverless compute layer and a managed relational database. It provisions a Google Cloud Run service configured with Identity-Aware Proxy (IAP) to securely expose the containerized application, securely retrieving sensitive environment variables directly from Google Secret Manager. For the database layer, it deploys a Google Cloud SQL instance running PostgreSQL 18 featuring automated backups, point-in-time recovery, and private networking configurations. The Cloud Run service connects to this database seamlessly via a Cloud SQL volume mount, and IAM policies are configured to restrict application access exclusively to authorized users.
+The Terraform configuration automates the deployment of the Accounting Ingest applications infrastructure on Google Cloud Platform, consisting of a serverless compute layer and a managed relational database. It provisions Google Cloud Run services for both the Web Application and the Web API, each configured with Identity-Aware Proxy (IAP) to securely expose the containerized applications while retrieving sensitive environment variables directly from Google Secret Manager. For the database layer, it deploys a Google Cloud SQL instance running PostgreSQL 18 featuring automated backups, point-in-time recovery, and private networking configurations. The Cloud Run services connect to this database seamlessly via Cloud SQL volume mounts, and IAM policies are configured to restrict application access exclusively to authorized users.
 
 ## Features
 
@@ -154,7 +154,7 @@ print(generate_password_hash("yourpassword"))
 To run the RESTful API locally for debugging and testing purposes, load the following Flask Environment Variables in your terminal:
 
 ```bash
-export FLASK_APP=src/entrypoints/api/app.py:server
+export FLASK_APP=src/entrypoints/webapi/app.py:server
 export FLASK_ENV=development
 export FLASK_DEBUG=1
 export FLASK_RUN_PORT=5001
@@ -225,7 +225,7 @@ Once running, the interactive Swagger UI and OpenAPI documentation is available 
 
 The code architecture of the Python solution is illustrated below. We adopt Onion/Clean Architecture, ensuring that our Business Logic (Domain Model) has no external dependencies. Our goal is to follow SOLID principles, promoting seamless future changes and enhancing code clarity.
 
-The repository provides multiple presentation entrypoints—the web application in [`src/entrypoints/webapp/app.py`](file:///workspaces/accounting-ingest-webapp/src/entrypoints/webapp/app.py) and the RESTful API in [`src/entrypoints/api/app.py`](file:///workspaces/accounting-ingest-webapp/src/entrypoints/api/app.py). Following Clean Architecture principles, entrypoints are treated as delivery mechanisms and details. This ensures that none of the core business logic depends on presentation frameworks; instead, entrypoints depend on the core application services. This design promotes flexibility and allows adding or evolving entrypoints (e.g., CLI tools in `src/entrypoints/cli`) without modifying domain logic or database infrastructure.
+The repository provides multiple presentation entrypoints—the web application in [`src/entrypoints/webapp/app.py`](file:///workspaces/accounting-ingest-webapp/src/entrypoints/webapp/app.py) and the RESTful API in [`src/entrypoints/webapi/app.py`](file:///workspaces/accounting-ingest-webapp/src/entrypoints/webapi/app.py). Following Clean Architecture principles, entrypoints are treated as delivery mechanisms and details. This ensures that none of the core business logic depends on presentation frameworks; instead, entrypoints depend on the core application services. This design promotes flexibility and allows adding or evolving entrypoints (e.g., CLI tools in `src/entrypoints/cli`) without modifying domain logic or database infrastructure.
 
 The Python entrypoints invoke application services in [`src/services.py`](file:///workspaces/accounting-ingest-webapp/src/services.py) using specialized **Data Transfer Objects (DTOs)** defined in [`src/dto.py`](file:///workspaces/accounting-ingest-webapp/src/dto.py). The services coordinate execution between the Domain Model ([`src/model.py`](file:///workspaces/accounting-ingest-webapp/src/model.py), structured around DDD Aggregate Roots such as `ChartOfAccounts` and `Transaction`) and the Repositories ([`src/repository.py`](file:///workspaces/accounting-ingest-webapp/src/repository.py)) to ensure data integrity and persistence.
 
