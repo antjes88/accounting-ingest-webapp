@@ -1,31 +1,19 @@
-data "google_service_account" "default" {
-  account_id = var.service_account_id
+data "google_service_account" "api" {
+  account_id = var.api_service_account_id
   project    = var.project_id
 }
 
-data "google_artifact_registry_repository" "my_repo" {
-  project       = var.project_id
-  location      = var.region
-  repository_id = var.repo_name
-}
-
-
-data "google_project" "project" {
-  project_id = var.project_id
-}
-
-
-resource "google_cloud_run_v2_service" "default" {
-  name        = var.service_name
+resource "google_cloud_run_v2_service" "webapi" {
+  name        = var.api_service_name
   location    = var.region
   project     = var.project_id
   ingress     = "INGRESS_TRAFFIC_ALL"
   iap_enabled = true
 
   template {
-    service_account = data.google_service_account.default.email
+    service_account = data.google_service_account.api.email
     containers {
-      image = "${var.region}-docker.pkg.dev/${var.project_id}/${data.google_artifact_registry_repository.my_repo.repository_id}/${var.image_name}:${var.image_tag}"
+      image = "${var.region}-docker.pkg.dev/${var.project_id}/${data.google_artifact_registry_repository.my_repo.repository_id}/${var.api_image_name}:${var.image_tag}"
       ports {
         container_port = 8080
       }
@@ -72,10 +60,20 @@ resource "google_cloud_run_v2_service" "default" {
       }
 
       env {
-        name = "SECRET_KEY"
+        name = "SECRET_KEY_API"
         value_source {
           secret_key_ref {
-            secret  = "AIW__SECRET_KEY"
+            secret  = "AIW__SECRET_KEY_API"
+            version = "latest"
+          }
+        }
+      }
+
+      env {
+        name = "JWT_SECRET_KEY_API"
+        value_source {
+          secret_key_ref {
+            secret  = "AIW__JWT_SECRET_KEY_API"
             version = "latest"
           }
         }
@@ -111,7 +109,6 @@ resource "google_cloud_run_v2_service" "default" {
     volumes {
       name = "cloudsql"
       cloud_sql_instance {
-
         instances = ["${google_sql_database_instance.instance.connection_name}"]
       }
     }
@@ -120,18 +117,19 @@ resource "google_cloud_run_v2_service" "default" {
 
 }
 
-resource "google_cloud_run_v2_service_iam_member" "iap_invoker" {
+resource "google_cloud_run_v2_service_iam_member" "api_iap_invoker" {
   project  = var.project_id
   location = var.region
-  name     = google_cloud_run_v2_service.default.name
+  name     = google_cloud_run_v2_service.webapi.name
   role     = "roles/run.invoker"
   member   = "serviceAccount:service-${data.google_project.project.number}@gcp-sa-iap.iam.gserviceaccount.com"
 }
 
-resource "google_iap_web_cloud_run_service_iam_member" "iap_me" {
+resource "google_iap_web_cloud_run_service_iam_member" "api_iap_me" {
   project                = var.project_id
   location               = var.region
-  cloud_run_service_name = google_cloud_run_v2_service.default.name
+  cloud_run_service_name = google_cloud_run_v2_service.webapi.name
   role                   = "roles/iap.httpsResourceAccessor"
   member                 = "user:${var.iap_user_email}"
 }
+

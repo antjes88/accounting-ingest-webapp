@@ -27,7 +27,7 @@ class AbstractRepository(ABC):
     def post_new_transaction(
         self,
         transaction: model.Transaction,
-    ) -> None:
+    ) -> int:
 
         raise NotImplementedError
 
@@ -190,7 +190,7 @@ class PostgresRepository(AbstractRepository):
             )
         )[0][0]
 
-    def post_new_transaction(self, transaction: model.Transaction) -> None:
+    def post_new_transaction(self, transaction: model.Transaction) -> int:
 
         transaction_id = self.get_max_transaction_id() + 1
 
@@ -213,6 +213,8 @@ class PostgresRepository(AbstractRepository):
                 transaction.amount,
             ),
         )
+
+        return transaction_id
 
     def post_new_account(self, account: model.Account) -> None:
         account_id = self.get_max_account_id() + 1

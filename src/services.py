@@ -16,7 +16,7 @@ from src.dto import (
 def record_new_transaction(
     repo: repository.AbstractRepository,
     transaction_dto: CreateTransactionDTO,
-) -> None:
+) -> int:
     chart = repo.get_chart_of_accounts()
 
     try:
@@ -51,7 +51,7 @@ def record_new_transaction(
         ],
     )
 
-    repo.post_new_transaction(transaction)
+    return repo.post_new_transaction(transaction)
 
 
 def record_new_account(

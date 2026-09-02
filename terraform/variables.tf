@@ -38,3 +38,18 @@ variable "iap_user_email" {
   type        = string
   description = "Email of the user to be granted IAP access"
 }
+
+variable "api_service_name" {
+  type        = string
+  description = "Name of the Web API Cloud Run service"
+}
+
+variable "api_image_name" {
+  type        = string
+  description = "Docker image name for the Web API"
+}
+
+variable "api_service_account_id" {
+  type        = string
+  description = "Service account ID to be used by Web API Cloud Run service"
+}

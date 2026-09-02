@@ -15,11 +15,15 @@ pip install -r requirements.txt
 if [ "$ISDEVCONTAINER" == "true" ]; then
     pip install -r dev-requirements.txt
 fi
-FILE="cli-requirements.txt" # Do you need CLI capabilities?
+FILE="cli-requirements.txt"
 if [ -f "$FILE" ]; then
     pip install -r "$FILE"
 fi
-FILE="webapp-requirements.txt" # Do you need a web app?
+FILE="webapp-requirements.txt"
+if [ -f "$FILE" ]; then
+    pip install -r "$FILE"
+fi
+FILE="api-requirements.txt"
 if [ -f "$FILE" ]; then
     pip install -r "$FILE"
 fi

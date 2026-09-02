@@ -34,14 +34,14 @@ def test_record_new_transaction(repo_with_data: PostgresRepository):
     """
     GIVEN a PostgresRepository with existing data and a valid CreateTransactionDTO object
     WHEN the record_new_transaction service is called with the repository and the DTO
-    THEN the transaction should be successfully recorded in the database,
+    THEN the transaction should be successfully recorded in the database and its ID returned,
     and the transaction details and ledger entries should match the provided data.
     """
     transaction_date = date(2001, 6, 1)
     description = "Test services new trans"
     amount = Decimal("123.98")
 
-    record_new_transaction(
+    transaction_id = record_new_transaction(
         repo_with_data,
         transaction_dto=CreateTransactionDTO(
             date=transaction_date,
@@ -51,8 +51,8 @@ def test_record_new_transaction(repo_with_data: PostgresRepository):
             credit_account_id=base_salary_account.id,  # type: ignore
         ),
     )
-    transaction_id = repo_with_data.get_max_transaction_id()
 
+    assert transaction_id == repo_with_data.get_max_transaction_id()
     assert repo_with_data.postgres_client.query(
         f"SELECT transaction_id, transaction_date, transaction_description FROM {repo_with_data.transactions_table} WHERE transaction_id = {transaction_id}"
     ) == [(transaction_id, transaction_date, description)]

@@ -1,10 +1,16 @@
 # Accounting-ingest-webapp
 
-This repository is a web-based personal accounting application built with Python and Flask that allows users to securely log in, manage their chart of accounts, ingest financial transactions, delete existing transactions via interactive row selection, and explore ledger records with dynamic date range filtering. At its core, it implements a double-entry bookkeeping system where users can record transactions by specifying a debit account, a credit account, an amount, and a description. It also supports hierarchical chart-of-accounts management (parent and sub-accounts categorized by type, physical status, and archive state).
+This repository is a personal double-entry bookkeeping accounting application built with Python and Flask. It provides two complementary interfaces: an interactive **Web Application** and a **RESTful API** designed for programmatic ledger management.
+
+- **Web Application**: Enables users to securely authenticate, manage hierarchical charts of accounts (categorized by type, physical status, and archive state), record financial transactions via dynamic dependent form dropdowns, explore ledger records with date range filtering, and interactively delete transactions.
+- **RESTful API**: Exposes versioned endpoints (`/api/v1/...`) powered by Flask-Smorest and Flask-JWT-Extended. Currently, its capabilities include:
+  - **JWT Authentication (`POST /api/v1/auth/login`)**: Secure credential authentication and issuance of Bearer JWT access tokens.
+  - **Transaction Ingestion (`POST /api/v1/transactions`)**: Programmatic recording of double-entry transactions with strict Marshmallow schema validation (validating positive amounts, valid integer account identifiers, and ISO dates) and automatic mapping to immutable domain DTOs, returning the assigned `transaction_id` upon creation.
+  - **Self-Documenting Interactive API Docs**: Complete OpenAPI 3.0 specification and interactive Swagger UI documentation hosted at `/docs`.
 
 The backend uses a **Clean / Onion Architecture** and **Domain-Driven Design (DDD)** approach combined with the **Repository pattern** and dedicated **Data Transfer Objects (DTOs)**, ensuring complete decoupling between presentation (Flask/WTForms), domain business rules (Aggregate Roots and Entities), and PostgreSQL persistence infrastructure. Furthermore, the repository is highly structured for continuous integration and deployment, featuring strict static typing, a comprehensive pytest suite for automated testing with Gherkin-style documentation, a Dockerized development container, and GitHub Actions pipelines that handle both testing and Terraform-based infrastructure deployment to Google Cloud Platform.
 
-The Terraform configuration automates the deployment of the Accounting Ingest Web App infrastructure on Google Cloud Platform, consisting of a serverless compute layer and a managed relational database. It provisions a Google Cloud Run service configured with Identity-Aware Proxy (IAP) to securely expose the containerized application, securely retrieving sensitive environment variables directly from Google Secret Manager. For the database layer, it deploys a Google Cloud SQL instance running PostgreSQL 18 featuring automated backups, point-in-time recovery, and private networking configurations. The Cloud Run service connects to this database seamlessly via a Cloud SQL volume mount, and IAM policies are configured to restrict application access exclusively to authorized users.
+The Terraform configuration automates the deployment of the Accounting Ingest applications infrastructure on Google Cloud Platform, consisting of a serverless compute layer and a managed relational database. It provisions Google Cloud Run services for both the Web Application and the Web API, each configured with Identity-Aware Proxy (IAP) to securely expose the containerized applications while retrieving sensitive environment variables directly from Google Secret Manager. For the database layer, it deploys a Google Cloud SQL instance running PostgreSQL 18 featuring automated backups, point-in-time recovery, and private networking configurations. The Cloud Run services connect to this database seamlessly via Cloud SQL volume mounts, and IAM policies are configured to restrict application access exclusively to authorized users.
 
 ## Features
 
@@ -16,7 +22,15 @@ The Terraform configuration automates the deployment of the Accounting Ingest We
 - **Dynamic Dependent Form Dropdowns**: Real-time client-side dropdown filtering for postable and parent accounts based on selected account types without requiring page reloads.
 - **Transaction Exploration & Date Range Filtering**: View and filter ledger records by customizable date ranges (`start_date`, `end_date`).
 - **Interactive Transaction Deletion**: Select individual transaction rows directly within the web table to safely delete transactions and their associated ledger entries.
-- **Visual Feedback & Notification Toasts**: Real-time Bootstrap toasts and flash alerts communicating domain validation errors (`ValueError`), success notices, and system messages.
+- **Visual Feedback & Notification Toasts**: Real-time Bootstrap toasts and flash alerts communicating domain validation errors (`ValueError`), success notices (including created transaction identifiers), and system messages.
+
+### RESTful API Features
+
+- **Resource-Oriented Design**: Clean, versioned REST endpoints (`/api/v1/...`) following standard HTTP methods and status codes (`201 Created`, `400 Bad Request`, `401 Unauthorized`, `422 Unprocessable Entity`, `500 Internal Server Error`).
+- **JWT Bearer Token Authentication**: Protected endpoints secured via `Flask-JWT-Extended` with token issuance at `POST /api/v1/auth/login`.
+- **Transaction Management**: Ingest double-entry ledger transactions via `POST /api/v1/transactions`, returning the generated `transaction_id` and confirmation message on `201 Created` responses.
+- **Marshmallow Schema Validation & DTO Mapping**: Strict request payload schema validation mapped directly to domain DTOs via `.to_dto()`.
+- **Interactive OpenAPI / Swagger Documentation**: Auto-generated interactive Swagger UI documentation and OpenAPI 3.0 spec accessible at `/docs`.
 
 ### System & Architecture Features
 
@@ -97,14 +111,15 @@ python -m pytest -vv --cov --cov-report=html
 
 Unit testing has been integrated into the CI/CD pipeline. A merge will not be approved unless all tests pass successfully. Additionally, a coverage report is automatically generated and provided as a comment for reference. A Service Account granted with role `roles/cloudsql.client` is required. Current workflow, `.github/workflows/pytest.yaml`, is set to access GCP Project through Workload Identity Provider.
 
-#### Flask App
+#### Web App
 
-To run the Flask app locally for debugging and testing purposes, you need to load the following Flask Environment Variables in your terminal:
+To run the Web app locally for debugging and testing purposes, you need to load the following Flask Environment Variables in your terminal:
 
 ```bash
 export FLASK_APP=src/entrypoints/webapp/app.py:server
 export FLASK_ENV=development
 export FLASK_DEBUG=1
+export FLASK_RUN_PORT=5000
 ```
 
 Then, to start the server:
@@ -114,13 +129,12 @@ flask run
 ```
 
 When run in this mode, the server will automatically restart whenever a file is saved, allowing for seamless testing and development.
-To fully integrate the authentication process, you also need to provide a .env file with the following variables:
+To fully integrate the authentication process, you also need to provide a `.env` file with the following variables:
 
 ```ini
 USERNAME={web username}
 PASSWORD={web password}
 HASHED_PASSWORD={PASSWORD hashed with werkzeug.security.generate_password_hash}
-SECRET_KEY={web page secret key}
 HOST={postgresql server IP Address}
 DATABASE_NAME={development database name}
 USER_NAME={database user name}
@@ -135,13 +149,85 @@ from werkzeug.security import generate_password_hash
 print(generate_password_hash("yourpassword"))
 ```
 
+#### RESTful API
+
+To run the RESTful API locally for debugging and testing purposes, load the following Flask Environment Variables in your terminal:
+
+```bash
+export FLASK_APP=src/entrypoints/webapi/app.py:server
+export FLASK_ENV=development
+export FLASK_DEBUG=1
+export FLASK_RUN_PORT=5001
+```
+
+Then, to start the API server:
+
+```bash
+flask run
+```
+
+When run in this mode, the server will automatically restart whenever a file is saved, allowing for seamless testing and development.
+To fully integrate the authentication process, you also need to provide a `.env` file with the following variables:
+
+```ini
+USERNAME={web username}
+PASSWORD={web password}
+HASHED_PASSWORD={PASSWORD hashed with werkzeug.security.generate_password_hash}
+HOST={postgresql server IP Address}
+DATABASE_NAME={development database name}
+USER_NAME={database user name}
+USER_PASSWORD={database user password}
+ISTESTING=true
+```
+
+In order to create a hashed password you must use:
+
+```python
+from werkzeug.security import generate_password_hash
+print(generate_password_hash("yourpassword"))
+```
+
+##### API Documentation & Swagger UI
+Once running, the interactive Swagger UI and OpenAPI documentation is available at:
+- **Swagger UI**: `http://localhost:5001/docs`
+- **OpenAPI JSON Spec**: `http://localhost:5001/openapi.json`
+
+##### API Endpoints Overview
+
+| Method | Endpoint | Description | Auth | Response Codes |
+|---|---|---|---|---|
+| `POST` | `/api/v1/auth/login` | Authenticate user credentials and receive JWT access token | None | `200 OK`, `401 Unauthorized`, `422 Unprocessable Entity` |
+| `POST` | `/api/v1/transactions` | Create and record a new double-entry transaction | Bearer JWT | `201 Created`, `400 Bad Request`, `401 Unauthorized`, `422 Unprocessable Entity`, `500 Internal Server Error` |
+
+**Example: Ingesting a Transaction**
+
+- **Request** (`POST /api/v1/transactions`):
+  ```json
+  {
+    "date": "2024-06-15",
+    "amount": "250.50",
+    "debit_account_id": 2,
+    "credit_account_id": 4,
+    "description": "Office supplies"
+  }
+  ```
+
+- **Response** (`201 Created`):
+  ```json
+  {
+    "transaction_id": 12,
+    "message": "Transaction recorded successfully"
+  }
+  ```
+
+
 ## Component Diagram
 
 The code architecture of the Python solution is illustrated below. We adopt Onion/Clean Architecture, ensuring that our Business Logic (Domain Model) has no external dependencies. Our goal is to follow SOLID principles, promoting seamless future changes and enhancing code clarity.
 
-The `src/entrypoints/webapp/app.py` file is used by the deployed solution as entrypoint. Nonetheless, several entry points could be provided seamlessly because, following Clean Architecture principles, the `main.py` function is treated as the last detail. This ensures that none of the core solution code depends on the entry point; instead, the entry point depends on the core solution code. This design promotes flexibility and allows for the easy addition of new entry points without impacting the existing architecture. Which, in turn, means that the source is independent of the infrastructure. 
+The repository provides multiple presentation entrypoints—the web application in [`src/entrypoints/webapp/app.py`](file:///workspaces/accounting-ingest-webapp/src/entrypoints/webapp/app.py) and the RESTful API in [`src/entrypoints/webapi/app.py`](file:///workspaces/accounting-ingest-webapp/src/entrypoints/webapi/app.py). Following Clean Architecture principles, entrypoints are treated as delivery mechanisms and details. This ensures that none of the core business logic depends on presentation frameworks; instead, entrypoints depend on the core application services. This design promotes flexibility and allows adding or evolving entrypoints (e.g., CLI tools in `src/entrypoints/cli`) without modifying domain logic or database infrastructure.
 
-The Python entrypoint invokes one of the services found in `src/services.py` using specialized **Data Transfer Objects (DTOs)** defined in `src/dto.py`. The services coordinate execution between the Domain Model (`src/model.py`, structured around DDD Aggregate Roots such as `ChartOfAccounts` and `Transaction`) and the Repositories (`src/repository.py`) to ensure data integrity and persistence.
+The Python entrypoints invoke application services in [`src/services.py`](file:///workspaces/accounting-ingest-webapp/src/services.py) using specialized **Data Transfer Objects (DTOs)** defined in [`src/dto.py`](file:///workspaces/accounting-ingest-webapp/src/dto.py). The services coordinate execution between the Domain Model ([`src/model.py`](file:///workspaces/accounting-ingest-webapp/src/model.py), structured around DDD Aggregate Roots such as `ChartOfAccounts` and `Transaction`) and the Repositories ([`src/repository.py`](file:///workspaces/accounting-ingest-webapp/src/repository.py)) to ensure data integrity and persistence.
 
 <p align="center">
     <img src="docs/images/components_diagram.png" alt="Components Diagram">
@@ -165,14 +251,16 @@ There are 2 CI/CD pipelines implemented as GitHub Actions:
 
 ## Deployment implementation
 
-The Terraform code in this repository automates the deployment of the accounting-ingest-webapp as a Cloud Run Service. It provisions and configures the necessary resources to ensure seamless ingestion and processing of data.
+The Terraform code in this repository automates the deployment of the Accounting Ingest applications as Google Cloud Run services (`accounting-ingest-webapp` and `accounting-ingest-webapi`). It provisions and configures the necessary resources to ensure seamless ingestion and processing of data.
 
 The Terraform code automates the deployment process by managing the following components:
 
-- **Google Cloud Run (v2)**: Hosts the containerized Flask application with Identity-Aware Proxy (IAP) enabled for secure, authenticated access.
-- **Google Cloud SQL**: A managed PostgreSQL 18 instance (`db-f1-micro`) configured with automated backups, deletion protection, and authorized networks.
-- **Google Secret Manager Integration**: Securely injects secrets (e.g., database credentials, app secret keys) into Cloud Run as environment variables.
-- **Cloud IAM**: Manages Identity-Aware Proxy (IAP) invoker and accessor roles, restricting access to authorized users (e.g., `roles/iap.httpsResourceAccessor`).
+- **Google Cloud Run (v2)**: Hosts the containerized applications:
+  - **Web Application (`accounting-ingest-webapp`)**: Containerized Flask web app with Identity-Aware Proxy (IAP) enabled.
+  - **Web API (`accounting-ingest-webapi`)**: Containerized Flask-Smorest REST API with Identity-Aware Proxy (IAP) enabled.
+- **Google Cloud SQL**: A managed PostgreSQL 18 instance (`db-f1-micro`) shared by both services, configured with automated backups, deletion protection, and authorized networks.
+- **Google Secret Manager Integration**: Securely injects secrets (e.g., database credentials, app secret keys) into both Cloud Run services as environment variables.
+- **Cloud IAM**: Manages Identity-Aware Proxy (IAP) invoker and accessor roles for both services, restricting access to authorized users (e.g., `roles/iap.httpsResourceAccessor`).
 
 ### Prerequisites for Terraform Execution
 
@@ -216,7 +304,7 @@ If you want to execute the solution locally, follow these steps:
 
 1. Outside the dev container, build the Docker image:
 ```bash
-docker build --target web-app -t LOCATION-docker.pkg.dev/PROJECT_ID/REPOSITORY_NAME/IMAGE_NAME:TAG .
+docker build --target DOCKERFILE_TARGET -t LOCATION-docker.pkg.dev/PROJECT_ID/REPOSITORY_NAME/IMAGE_NAME:TAG .
 ```
 
 2. Push the Docker image to Artifact Registry:
