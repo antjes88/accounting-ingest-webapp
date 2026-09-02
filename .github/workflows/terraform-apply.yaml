@@ -6,7 +6,9 @@ permissions:
   pull-requests: write
 
 on:
-  push:
+  # TODO: uncomment
+  # push:
+  pull_request:
     branches:
       - main
 
@@ -15,7 +17,8 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  IMAGE_NAME: "accounting-ingest-webapp"
+  WEBAPP_IMAGE_NAME: "accounting-ingest-webapp"
+  WEBAPI_IMAGE_NAME: "accounting-ingest-webapi"
   GCP_PROJECT_ID: "${{ secrets.GCP_REPO_ID }}"
   GCP_REGION: "europe-west2"
   REPO_NAME: "cloud-run-services"
@@ -46,20 +49,32 @@ jobs:
       - name: Configure Docker for Artifact Registry
         run: gcloud auth configure-docker ${{ env.GCP_REGION }}-docker.pkg.dev
 
-      - name: Build Docker Image
+      - name: Build Web App Docker Image
         run: |
           docker build \
             --target web-app \
-            -t ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.IMAGE_NAME }}:${{ github.run_number }} \
+            -t ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.WEBAPP_IMAGE_NAME }}:${{ github.run_number }} \
             .
           docker tag \
-            ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.IMAGE_NAME }}:${{ github.run_number }} \
-            ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.IMAGE_NAME }}:latest
+            ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.WEBAPP_IMAGE_NAME }}:${{ github.run_number }} \
+            ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.WEBAPP_IMAGE_NAME }}:latest
 
-      - name: Push Docker Image to Artifact Registry
+      - name: Build Web API Docker Image
         run: |
-          docker push ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.IMAGE_NAME }}:${{ github.run_number }} 
-          docker push ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.IMAGE_NAME }}:latest
+          docker build \
+            --target web-api \
+            -t ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.WEBAPI_IMAGE_NAME }}:${{ github.run_number }} \
+            .
+          docker tag \
+            ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.WEBAPI_IMAGE_NAME }}:${{ github.run_number }} \
+            ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.WEBAPI_IMAGE_NAME }}:latest
+
+      - name: Push Docker Images to Artifact Registry
+        run: |
+          docker push ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.WEBAPP_IMAGE_NAME }}:${{ github.run_number }} 
+          docker push ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.WEBAPP_IMAGE_NAME }}:latest
+          docker push ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.WEBAPI_IMAGE_NAME }}:${{ github.run_number }} 
+          docker push ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.WEBAPI_IMAGE_NAME }}:latest
 
       - name: Terraform apply
         run: |
@@ -75,7 +90,8 @@ jobs:
             -input=false \
             -auto-approve \
             -var="image_tag=${{ github.run_number }}" \
-            -var="image_name=${{ env.IMAGE_NAME }}" \
+            -var="image_name=${{ env.WEBAPP_IMAGE_NAME }}" \
+            -var="api_image_name=${{ env.WEBAPI_IMAGE_NAME }}" \
             -var="project_id=${{ env.GCP_PROJECT_ID }}" \
             -var="region=${{ env.GCP_REGION }}" \
             -var="repo_name=${{ env.REPO_NAME }}" \
