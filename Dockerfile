@@ -17,7 +17,7 @@ RUN mv terraform /usr/bin/
 RUN rm terraform_1.6.6_linux_amd64.zip
 
 
-FROM terraform as npx
+FROM terraform AS npx
 # Install npx
 RUN apt-get install -y curl gnupg \
     && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
@@ -93,9 +93,9 @@ RUN sed -i 's/\r$//' ./python_setup.sh && \
 RUN ./python_setup.sh
 
 ENV PATH="/usr/app/venv/bin:${PATH}"
-ENV PYTHONPATH="/usr/app:/usr/app/src/entrypoints/api:${PYTHONPATH}"
+ENV PYTHONPATH="/usr/app:/usr/app/src/entrypoints/webapi:${PYTHONPATH}"
 
-CMD ["gunicorn", "-b", "0.0.0.0:8080", "src.entrypoints.api.app:server"]
+CMD ["gunicorn", "-b", "0.0.0.0:8080", "src.entrypoints.webapi.app:server"]
 
 
 FROM base AS cli-app

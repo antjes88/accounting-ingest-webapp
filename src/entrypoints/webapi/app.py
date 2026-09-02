@@ -16,8 +16,8 @@ server = Flask(__name__)
 
 class APIConfig:
     API_TITLE = "Accounting Ingest API"
-    SECRET_KEY = os.getenv("SECRET_KEY", secrets.token_urlsafe(32))
-    JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", secrets.token_bytes(32))
+    SECRET_KEY = os.getenv("SECRET_KEY_API", secrets.token_urlsafe(32))
+    JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY_API", secrets.token_bytes(32))
     API_VERSION = "v1"
     OPENAPI_VERSION = "3.0.3"
     OPENAPI_URL_PREFIX = "/"

@@ -251,14 +251,16 @@ There are 2 CI/CD pipelines implemented as GitHub Actions:
 
 ## Deployment implementation
 
-The Terraform code in this repository automates the deployment of the accounting-ingest-webapp as a Cloud Run Service. It provisions and configures the necessary resources to ensure seamless ingestion and processing of data.
+The Terraform code in this repository automates the deployment of the Accounting Ingest applications as Google Cloud Run services (`accounting-ingest-webapp` and `accounting-ingest-webapi`). It provisions and configures the necessary resources to ensure seamless ingestion and processing of data.
 
 The Terraform code automates the deployment process by managing the following components:
 
-- **Google Cloud Run (v2)**: Hosts the containerized Flask application with Identity-Aware Proxy (IAP) enabled for secure, authenticated access.
-- **Google Cloud SQL**: A managed PostgreSQL 18 instance (`db-f1-micro`) configured with automated backups, deletion protection, and authorized networks.
-- **Google Secret Manager Integration**: Securely injects secrets (e.g., database credentials, app secret keys) into Cloud Run as environment variables.
-- **Cloud IAM**: Manages Identity-Aware Proxy (IAP) invoker and accessor roles, restricting access to authorized users (e.g., `roles/iap.httpsResourceAccessor`).
+- **Google Cloud Run (v2)**: Hosts the containerized applications:
+  - **Web Application (`accounting-ingest-webapp`)**: Containerized Flask web app with Identity-Aware Proxy (IAP) enabled.
+  - **Web API (`accounting-ingest-webapi`)**: Containerized Flask-Smorest REST API with Identity-Aware Proxy (IAP) enabled.
+- **Google Cloud SQL**: A managed PostgreSQL 18 instance (`db-f1-micro`) shared by both services, configured with automated backups, deletion protection, and authorized networks.
+- **Google Secret Manager Integration**: Securely injects secrets (e.g., database credentials, app secret keys) into both Cloud Run services as environment variables.
+- **Cloud IAM**: Manages Identity-Aware Proxy (IAP) invoker and accessor roles for both services, restricting access to authorized users (e.g., `roles/iap.httpsResourceAccessor`).
 
 ### Prerequisites for Terraform Execution
 
@@ -302,7 +304,7 @@ If you want to execute the solution locally, follow these steps:
 
 1. Outside the dev container, build the Docker image:
 ```bash
-docker build --target web-app -t LOCATION-docker.pkg.dev/PROJECT_ID/REPOSITORY_NAME/IMAGE_NAME:TAG .
+docker build --target DOCKERFILE_TARGET -t LOCATION-docker.pkg.dev/PROJECT_ID/REPOSITORY_NAME/IMAGE_NAME:TAG .
 ```
 
 2. Push the Docker image to Artifact Registry:
