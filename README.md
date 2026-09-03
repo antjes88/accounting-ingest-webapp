@@ -1,12 +1,13 @@
 # Accounting-ingest-webapp
 
-This repository is a personal double-entry bookkeeping accounting application built with Python and Flask. It provides two complementary interfaces: an interactive **Web Application** and a **RESTful API** designed for programmatic ledger management.
+This repository is a personal double-entry bookkeeping accounting application built with Python and Flask. It provides three complementary interfaces: an interactive **Web Application**, a **RESTful API**, and a **Command Line Interface (CLI)** designed for comprehensive ledger management.
 
 - **Web Application**: Enables users to securely authenticate, manage hierarchical charts of accounts (categorized by type, physical status, and archive state), record financial transactions via dynamic dependent form dropdowns, explore ledger records with date range filtering, and interactively delete transactions.
 - **RESTful API**: Exposes versioned endpoints (`/api/v1/...`) powered by Flask-Smorest and Flask-JWT-Extended. Currently, its capabilities include:
   - **JWT Authentication (`POST /api/v1/auth/login`)**: Secure credential authentication and issuance of Bearer JWT access tokens.
   - **Transaction Ingestion (`POST /api/v1/transactions`)**: Programmatic recording of double-entry transactions with strict Marshmallow schema validation (validating positive amounts, valid integer account identifiers, and ISO dates) and automatic mapping to immutable domain DTOs, returning the assigned `transaction_id` upon creation.
   - **Self-Documenting Interactive API Docs**: Complete OpenAPI 3.0 specification and interactive Swagger UI documentation hosted at `/docs`.
+- **Command Line Interface (CLI)**: Enables fast, scriptable transaction ingestion directly from the terminal using Click. Ingests JSON files matching the API schema via `create-transaction -fp /path/to/transaction.json`.
 
 The backend uses a **Clean / Onion Architecture** and **Domain-Driven Design (DDD)** approach combined with the **Repository pattern** and dedicated **Data Transfer Objects (DTOs)**, ensuring complete decoupling between presentation (Flask/WTForms), domain business rules (Aggregate Roots and Entities), and PostgreSQL persistence infrastructure. Furthermore, the repository is highly structured for continuous integration and deployment, featuring strict static typing, a comprehensive pytest suite for automated testing with Gherkin-style documentation, a Dockerized development container, and GitHub Actions pipelines that handle both testing and Terraform-based infrastructure deployment to Google Cloud Platform.
 
@@ -31,6 +32,12 @@ The Terraform configuration automates the deployment of the Accounting Ingest ap
 - **Transaction Management**: Ingest double-entry ledger transactions via `POST /api/v1/transactions`, returning the generated `transaction_id` and confirmation message on `201 Created` responses.
 - **Marshmallow Schema Validation & DTO Mapping**: Strict request payload schema validation mapped directly to domain DTOs via `.to_dto()`.
 - **Interactive OpenAPI / Swagger Documentation**: Auto-generated interactive Swagger UI documentation and OpenAPI 3.0 spec accessible at `/docs`.
+
+### Command Line Interface (CLI) Features
+
+- **File-Based Transaction Ingestion**: Ingest double-entry ledger transactions directly from JSON files using `create-transaction -fp <path>`.
+- **Consistent Schema Validation**: Validates JSON payloads against required fields (`date`, `amount`, `debit_account_id`, `credit_account_id`), ensuring data integrity and returning the assigned `transaction_id`.
+- **Scriptable & Automation-Ready**: Designed for automation workflows, shell scripts, and batch processing without requiring a web browser.
 
 ### System & Architecture Features
 
@@ -220,12 +227,39 @@ Once running, the interactive Swagger UI and OpenAPI documentation is available 
   }
   ```
 
+#### CLI Tool
+
+The repository provides a Command Line Interface (CLI) powered by Click for programmatic transaction recording via JSON files.
+
+To execute a transaction creation command:
+
+```bash
+python -m src.entrypoints.cli create-transaction -fp /path/to/transaction.json
+```
+
+The JSON file uses the same schema format as the REST API:
+
+```json
+{
+  "date": "2024-06-15",
+  "amount": "250.50",
+  "debit_account_id": 2,
+  "credit_account_id": 4,
+  "description": "Office supplies"
+}
+```
+
+Upon successful creation, the CLI outputs:
+```
+Transaction recorded successfully! Transaction ID: <id>
+```
+
 
 ## Component Diagram
 
 The code architecture of the Python solution is illustrated below. We adopt Onion/Clean Architecture, ensuring that our Business Logic (Domain Model) has no external dependencies. Our goal is to follow SOLID principles, promoting seamless future changes and enhancing code clarity.
 
-The repository provides multiple presentation entrypoints—the web application in [`src/entrypoints/webapp/app.py`](file:///workspaces/accounting-ingest-webapp/src/entrypoints/webapp/app.py) and the RESTful API in [`src/entrypoints/webapi/app.py`](file:///workspaces/accounting-ingest-webapp/src/entrypoints/webapi/app.py). Following Clean Architecture principles, entrypoints are treated as delivery mechanisms and details. This ensures that none of the core business logic depends on presentation frameworks; instead, entrypoints depend on the core application services. This design promotes flexibility and allows adding or evolving entrypoints (e.g., CLI tools in `src/entrypoints/cli`) without modifying domain logic or database infrastructure.
+The repository provides multiple presentation entrypoints—the web application in [`src/entrypoints/webapp/app.py`](file:///workspaces/accounting-ingest-webapp/src/entrypoints/webapp/app.py), the RESTful API in [`src/entrypoints/webapi/app.py`](file:///workspaces/accounting-ingest-webapp/src/entrypoints/webapi/app.py), and the CLI tool in [`src/entrypoints/cli/__main__.py`](file:///workspaces/accounting-ingest-webapp/src/entrypoints/cli/__main__.py). Following Clean Architecture principles, entrypoints are treated as delivery mechanisms and ultimate details. This ensures that none of the core business logic depends on presentation frameworks; instead, entrypoints depend on the core application services. This design promotes flexibility and allows adding or evolving entrypoints without modifying domain logic or database infrastructure.
 
 The Python entrypoints invoke application services in [`src/services.py`](file:///workspaces/accounting-ingest-webapp/src/services.py) using specialized **Data Transfer Objects (DTOs)** defined in [`src/dto.py`](file:///workspaces/accounting-ingest-webapp/src/dto.py). The services coordinate execution between the Domain Model ([`src/model.py`](file:///workspaces/accounting-ingest-webapp/src/model.py), structured around DDD Aggregate Roots such as `ChartOfAccounts` and `Transaction`) and the Repositories ([`src/repository.py`](file:///workspaces/accounting-ingest-webapp/src/repository.py)) to ensure data integrity and persistence.
 
