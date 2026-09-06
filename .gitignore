@@ -165,6 +165,7 @@ kindergarden.py
 database/permissions/*
 .devcontainer/git_config.sh
 .devcontainer/load_mcp_config_tokens.sh
+.devcontainer/load_envs.sh
 ./temp
 ./tmp
 

@@ -45,6 +45,7 @@ The Terraform configuration automates the deployment of the Accounting Ingest ap
 - **Strict Domain Invariants Enforcement**: Enforces business rules at the domain level, including balanced debit/credit sums, single-level parent-child account nesting, and case-insensitive unique account naming.
 - **Decoupled Boundaries via DTOs**: Presentation, forms, and services communicate exclusively through immutable Data Transfer Objects (`src/dto.py`).
 - **Multi-Entrypoint Extensibility**: Clean decoupling allows extending entrypoints (such as CLI tools in `src/entrypoints/cli`) without modifying core domain logic.
+- **Thread-Safe Connection Pooling & Resilient Lifecycle**: Built-in connection pooling via `psycopg2.pool.ThreadedConnectionPool` inside `PostgresSQLClient` with thread-safe connection borrowing, automatic transaction rollback on failed operations to prevent pool poisoning, and clean graceful shutdown hooks via `atexit`.
 - **PostgreSQL Infrastructure Adapter**: Centralized, safely parameterized SQL queries (`src/utils/sql_queries.py`) with dynamic table abstractions (`SqlTable`).
 - **Automated Database Scaffolding & Permissions**: SQL scaffolding (`database/build_scaffolding.psql`) with environment-based permission configuration (*dev*, *test*, *prod*).
 - **Comprehensive Automated Testing**: Pytest test suite with Gherkin-style documentation, isolated fixtures, parametrization, and code coverage enforcement.
@@ -93,6 +94,45 @@ export MCP_CONTEXT7_TOKEN="your_context7_token_here"
 To run the application locally, you will need to create and configure a development database. Detailed instructions on how to build the database solution, create the necessary tables using the provided scaffolding script, and set up user permissions can be found in the `database/README.md` file.
 
 It is also highly recommended to create a separate database specifically for testing purposes. This ensures that your automated test suite does not interfere with or overwrite your development data.
+
+### Local Connectivity via Cloud SQL Auth Proxy
+
+For local development and running tests inside the Dev Container, the application connects to the Google Cloud SQL instance through the **Cloud SQL Auth Proxy**.
+
+#### 1. Configure Environment Variables (`load_envs.sh`)
+
+The proxy launch script (`.devcontainer/launch_cloud_sql_proxy.sh`) requires the target Cloud SQL instance connection identifier via the `INSTANCE_CONNECTION_NAME` environment variable.
+
+The Dev Container shell profile (`.devcontainer/bashrc.sh`) automatically sources `.devcontainer/load_envs.sh` upon terminal initialization. To configure it, create `.devcontainer/load_envs.sh` (which is excluded from version control via `.gitignore`):
+
+```bash
+#!/bin/bash
+
+export INSTANCE_CONNECTION_NAME="<project-id>:<region>:<instance-name>"
+```
+
+> **Note**: The connection string follows Google Cloud SQL's standard format: `project-id:region:instance-name` (e.g., `poetic-dock-367718:europe-west2:accounting-postgresql`). You can obtain this identifier from the Google Cloud Console or via the gcloud CLI: `gcloud sql instances describe <instance-name> --format='value(connectionName)'`.
+
+#### 2. Launching the Proxy
+
+Once the environment variable is loaded in your terminal session, initialize the proxy background process:
+
+```bash
+# Launch Cloud SQL Proxy in the background
+./.devcontainer/launch_cloud_sql_proxy.sh
+```
+
+- **How it Works**: The proxy listens locally on `127.0.0.1:5432` and opens an encrypted mTLS tunnel to the Cloud SQL instance on port `3307`.
+- **Identity-Based Authentication**: The proxy queries Google Cloud SQL Admin API using your active `gcloud` credentials to retrieve ephemeral SSL certificates.
+- **No IP Whitelisting Required**: Because access is authorized via Google Cloud IAM, developer client IP addresses do not need to be whitelisted in the instance's `authorized_networks`. The database instance's public IP is used strictly as the routing endpoint for the mTLS tunnel.
+- **Stopping or Restarting the Proxy**: If you need to stop or restart the proxy process:
+  ```bash
+  # Terminate by process name
+  pkill -f cloud-sql-proxy
+
+  # Alternatively, free the local port
+  fuser -k 5432/tcp
+  ```
 
 ### Unit tests
 

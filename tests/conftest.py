@@ -6,13 +6,18 @@ from src.repository import PostgresRepository
 
 
 @pytest.fixture(scope="session")
-def db_conn() -> PostgresGCPClient:
-    return PostgresGCPClient(
+def db_conn() -> Generator[PostgresGCPClient, None, None]:
+    client = PostgresGCPClient(
         host=os.getenv("HOST") or "",
         database_name=os.getenv("DATABASE_NAME") or "",
         user_name=os.getenv("USER_NAME") or "",
         user_password=os.getenv("USER_PASSWORD") or "",
     )
+
+    yield client
+
+    client.close()
+    PostgresGCPClient.close_all_pools()
 
 
 @pytest.fixture(scope="session")
