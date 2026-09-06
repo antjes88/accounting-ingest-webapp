@@ -1,8 +1,10 @@
+import os
 import pytest
 import datetime as dt
 from typing import Generator
+from unittest.mock import MagicMock
 
-from utils.postgresql_client import PostgresGCPClient
+from src.utils.postgresql_client import PostgresGCPClient, PostgresSQLClient
 
 
 @pytest.fixture(scope="function")
@@ -105,3 +107,130 @@ def test_create_connection_raises_exception_with_wrong_credentials():
     )
     with pytest.raises(Exception):
         db_conn_wrong_credentials.create_connection()
+
+
+def test_failed_query_rolls_back_and_does_not_poison_pool(db_conn: PostgresGCPClient):
+    """
+    GIVEN an active PostgresGCPClient
+    WHEN an invalid query causes an error in a pooled connection
+    THEN the transaction is rolled back and the next query on the pool succeeds.
+    """
+    with pytest.raises(Exception):
+        db_conn.execute("INVALID SQL STATEMENT;")
+
+    # Next query should succeed without "current transaction is aborted"
+    result = db_conn.query("SELECT 42;")
+    assert result == [(42,)]
+
+
+def test_client_close_cleans_up_pool():
+    """
+    GIVEN a PostgresGCPClient with an initialized connection pool
+    WHEN close is called on the client
+    THEN the pool is cleanly closed and removed from the active pools registry.
+    """
+    client = PostgresGCPClient(
+        host=os.getenv("HOST") or "",
+        database_name=os.getenv("DATABASE_NAME") or "",
+        user_name=os.getenv("USER_NAME") or "",
+        user_password=os.getenv("USER_PASSWORD") or "",
+    )
+    # Trigger pool creation
+    client.query("SELECT 1;")
+    assert client._pool_key in PostgresGCPClient._pools
+
+    # Close pool
+    client.close()
+    assert client._pool_key not in PostgresGCPClient._pools
+
+
+def test_execute_with_params(execute_create_table: PostgresGCPClient):
+    """
+    GIVEN a PostgreSQL client connected to a database with a test table
+    WHEN execute is called with a parameterized UPDATE statement
+    THEN the table records are updated accordingly.
+    """
+    statement = "UPDATE test.simple SET Activated = %s WHERE Id = %s;"
+    execute_create_table.execute(statement, params=(False, 1))
+
+    rows = execute_create_table.query("SELECT Activated FROM test.simple WHERE Id = 1;")
+    assert rows == [(False,)]
+
+
+def test_close_connection_when_conn_is_already_closed(db_conn: PostgresGCPClient):
+    """
+    GIVEN an active PostgresGCPClient and an already-closed connection
+    WHEN close_connection is called with that connection
+    THEN it should safely return it to the pool with close=True without errors.
+    """
+    cursor, conn = db_conn.create_connection()
+    conn.close()
+    assert conn.closed
+    db_conn.close_connection(cursor, conn)
+
+
+def test_close_connection_when_cursor_close_raises_exception(
+    db_conn: PostgresGCPClient,
+):
+    """
+    GIVEN a mock cursor whose close method raises an exception
+    WHEN close_connection is called
+    THEN it should catch and suppress the cursor exception and proceed to return the connection.
+    """
+    mock_cursor = MagicMock()
+    mock_cursor.closed = False
+    mock_cursor.close.side_effect = RuntimeError("Cursor close failed")
+
+    cursor, conn = db_conn.create_connection()
+    db_conn.close_connection(cursor, None)
+    db_conn.close_connection(mock_cursor, conn)
+
+
+def test_close_connection_when_rollback_raises_exception(db_conn: PostgresGCPClient):
+    """
+    GIVEN a connection whose rollback method raises an exception
+    WHEN close_connection is called
+    THEN it should discard the connection from the pool without raising an unhandled error.
+    """
+    cursor, conn = db_conn.create_connection()
+    mock_conn = MagicMock()
+    mock_conn.closed = False
+    mock_conn.rollback.side_effect = RuntimeError("Rollback failed")
+
+    pool = db_conn._get_pool()
+    pool._rused[id(mock_conn)] = None  # type: ignore
+
+    db_conn.close_connection(cursor, mock_conn)
+    db_conn.close_connection(None, conn)
+
+
+def test_close_connection_without_active_pool():
+    """
+    GIVEN a PostgresGCPClient whose connection pool is not initialized
+    WHEN close_connection is called with a standalone open connection
+    THEN it should close the connection directly.
+    """
+    client = PostgresGCPClient(
+        host="127.0.0.1",
+        database_name="uninitialized_db",
+        user_name="user",
+        user_password="password",
+    )
+    mock_conn = MagicMock()
+    mock_conn.closed = False
+
+    client.close_connection(None, mock_conn)
+    mock_conn.close.assert_called_once()
+
+
+def test_close_all_pools_with_active_pools(db_conn: PostgresGCPClient):
+    """
+    GIVEN active connection pools in PostgresSQLClient._pools
+    WHEN close_all_pools is called
+    THEN all pools should be closed and the registry cleared.
+    """
+    db_conn.query("SELECT 1;")
+    assert len(PostgresSQLClient._pools) > 0
+
+    PostgresSQLClient.close_all_pools()
+    assert len(PostgresSQLClient._pools) == 0

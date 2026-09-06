@@ -7,7 +7,8 @@ It is a web-based personal double-entry bookkeeping accounting application built
 - Python version: 3.12. Don't use newer syntax.
 - Dependency management: `pip` with requirements for the app in `requirements.txt` file. Explicitly ask for permissions when requiring new libraries.
 - Always ask for approval before implementing changes. Do not commit changes.
-
+- Python environment is located at `/usr/app/venv/bin/python`
+- For testing use: `python -m pytest` followed by any parameter you required for your purpose.
 
 ## 2. Core Architecture Rules:
 

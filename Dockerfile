@@ -6,6 +6,7 @@ RUN adduser --uid 10000 app
 RUN mkdir -p /usr/app
 RUN chown app:app /usr/app
 
+
 FROM base AS terraform
 # Install terraform
 RUN apt-get update
@@ -24,7 +25,15 @@ RUN apt-get install -y curl gnupg \
     && apt-get install -y nodejs \
     && rm -rf /var/lib/apt/lists/*
 
-FROM npx AS gcloud
+
+FROM npx AS cloud-sql-proxy
+# Install cloud-sql-proxy
+RUN apt-get install -y curl \
+    && curl -o /usr/local/bin/cloud-sql-proxy https://storage.googleapis.com/cloud-sql-connectors/cloud-sql-proxy/v2.1.1/cloud-sql-proxy.linux.amd64 \
+    && chmod +x /usr/local/bin/cloud-sql-proxy
+
+
+FROM cloud-sql-proxy AS gcloud
 # Install gcloud
 USER 10000
 WORKDIR /usr/app
@@ -52,6 +61,10 @@ RUN ./python_setup.sh
 COPY --chown=app:app ./.devcontainer/post_create_commands.sh .
 RUN sed -i 's/\r$//' ./post_create_commands.sh && \
     chmod +x ./post_create_commands.sh
+
+COPY --chown=app:app ./.devcontainer/launch_cloud_sql_proxy.sh .
+RUN sed -i 's/\r$//' ./launch_cloud_sql_proxy.sh && \
+    chmod +x ./launch_cloud_sql_proxy.sh
 
 WORKDIR /home/app
 COPY ./.devcontainer/bashrc.sh .

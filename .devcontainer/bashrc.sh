@@ -7,3 +7,13 @@ source /usr/app/venv/bin/activate
 if [ -f "/workspaces/accounting-ingest-webapp/.devcontainer/load_mcp_config_tokens.sh" ]; then
     source "/workspaces/accounting-ingest-webapp/.devcontainer/load_mcp_config_tokens.sh"
 fi
+
+FILE="./.devcontainer/load_envs.sh"
+if [ -f "$FILE" ]; then
+    sed -i 's/\r$//' "$FILE"
+    chmod +x "$FILE"
+    source "$FILE"
+
+else
+    echo "$FILE not found. Follow instructions in README.md to set up env vars. ### Local Connectivity via Cloud SQL Auth Proxy"
+fi

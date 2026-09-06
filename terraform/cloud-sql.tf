@@ -16,14 +16,14 @@ resource "google_sql_database_instance" "instance" {
     ip_configuration {
       enable_private_path_for_google_cloud_services = true
       private_network                               = "projects/${var.project_id}/global/networks/default"
-      authorized_networks {
-        name  = "Looker-1"
-        value = "142.251.74.0/23"
-      }
-      authorized_networks {
-        name  = "Looker-2"
-        value = "74.125.0.0/16"
-      }
+      # authorized_networks {
+      #   name  = "Looker-1"
+      #   value = "142.251.74.0/23"
+      # }
+      # authorized_networks {
+      #   name  = "Looker-2"
+      #   value = "74.125.0.0/16"
+      # }
 
     }
 
