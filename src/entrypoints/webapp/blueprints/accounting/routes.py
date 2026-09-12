@@ -1,9 +1,12 @@
 from flask import render_template, flash, redirect, url_for, request
 import os
 
+from decimal import Decimal
+
 from src.utils.postgresql_client import PostgresGCPClient
 from src.utils.logs import default_module_logger
 from src.repository import PostgresRepository
+from src.dto import NonPhysicalValuationViewDTO
 from src import services
 
 from . import accounting_pages
@@ -12,6 +15,7 @@ from .forms import (
     NewAccountForm,
     TransactionFilterForm,
     DeleteTransactionForm,
+    NonPhysicalValuationFilterForm,
 )
 
 logger = default_module_logger(__file__)
@@ -149,3 +153,54 @@ def delete_transaction():
         flash("Invalid transaction selection.", "warning")
 
     return redirect(url_for("accounting_pages.list_transactions"))
+
+
+@accounting_pages.route("/non_physical_accounts", methods=["GET"])
+def non_physical_accounts():
+    repo = _get_repository()
+    account_options = services.get_non_physical_account_options(repo)
+    form = NonPhysicalValuationFilterForm(
+        account_options=account_options,
+        formdata=request.args,
+        meta={"csrf": False},
+    )
+
+    filter_dto = form.to_dto() if request.args and form.validate() else form.to_dto()
+
+    try:
+        valuation_view = services.get_non_physical_accounts_valuation(
+            repo=repo, filter_dto=filter_dto
+        )
+
+    except ValueError as err:
+        logger.warning(
+            f"Validation error retrieving non-physical accounts valuation: {err}"
+        )
+        flash(f"Error loading valuation: {err}", "warning")
+        valuation_view = NonPhysicalValuationViewDTO(
+            accounts=tuple(account_options),
+            selected_account_id=None,
+            monthly_entries=(),
+            total_current_value=Decimal("0.00"),
+            latest_monthly_change=Decimal("0.00"),
+        )
+
+    except Exception:
+        logger.exception("Unexpected error loading non-physical accounts valuation")
+        flash(
+            "An unexpected error occurred while loading non-physical accounts valuation.",
+            "error",
+        )
+        valuation_view = NonPhysicalValuationViewDTO(
+            accounts=tuple(account_options),
+            selected_account_id=None,
+            monthly_entries=(),
+            total_current_value=Decimal("0.00"),
+            latest_monthly_change=Decimal("0.00"),
+        )
+
+    return render_template(
+        "non_physical_accounts.html",
+        valuation_view=valuation_view,
+        form=form,
+    )

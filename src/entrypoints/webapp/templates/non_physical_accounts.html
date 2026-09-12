@@ -1,0 +1,670 @@
+{% extends 'base.html' %}
+{% block title %}Non-Physical Accounts Valuation | LedgerApp{% endblock %}
+{% block content %}
+<!--non_physical_accounts_valuation this comment is to check that it is reached on test-->
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+    <div>
+        <h2 class="h3 fw-bold mb-1">Non-Physical Accounts Valuation</h2>
+        <p class="text-muted small mb-0">Historical month-by-month value and balance progression for intangible and
+            virtual accounts.</p>
+    </div>
+</div>
+
+{% if valuation_view.accounts %}
+<!-- Summary KPI Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card shadow-sm h-100 border-0">
+            <div class="card-body p-4">
+                <span class="text-muted small text-uppercase fw-semibold tracking-wide">Total Valuation</span>
+                <div class="d-flex align-items-baseline gap-2 mt-2">
+                    <h3 class="display-6 fw-bold mb-0 font-mono-num text-dark">
+                        £{{ "{:,.2f}".format(valuation_view.total_current_value) }}
+                    </h3>
+                </div>
+                <p class="text-muted small mb-0 mt-2">Current aggregate balance across non-physical accounts</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow-sm h-100 border-0">
+            <div class="card-body p-4">
+                <span class="text-muted small text-uppercase fw-semibold tracking-wide">Latest Month Change</span>
+                <div class="d-flex align-items-baseline gap-2 mt-2">
+                    <h3
+                        class="display-6 fw-bold mb-0 font-mono-num {% if valuation_view.latest_monthly_change > 0 %}text-success{% elif valuation_view.latest_monthly_change < 0 %}text-danger{% else %}text-muted{% endif %}">
+                        {% if valuation_view.latest_monthly_change > 0 %}+{% endif %}£{{
+                        "{:,.2f}".format(valuation_view.latest_monthly_change) }}
+                    </h3>
+                </div>
+                <p class="text-muted small mb-0 mt-2">Net change recorded in the most recent active period</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow-sm h-100 border-0">
+            <div class="card-body p-4">
+                <span class="text-muted small text-uppercase fw-semibold tracking-wide">Tracked Accounts</span>
+                <div class="d-flex align-items-baseline gap-2 mt-2">
+                    <h3 class="display-6 fw-bold mb-0 font-mono-num text-primary">
+                        {{ valuation_view.accounts|length }}
+                    </h3>
+                </div>
+                <p class="text-muted small mb-0 mt-2">Active accounts configured with non-physical classification</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filter Toolbar -->
+<!-- Filter Toolbar with Drag & Drop Account Selection -->
+<!--non_physical_accounts_dnd_filter this comment is to check that the drag and drop filter is reached on test-->
+<!--non_physical_accounts_default_persistence this comment is to check that default persistence controls are reached on test-->
+<div class="card shadow-sm mb-4">
+    <div class="card-body py-3">
+        <form method="GET" action="{{ url_for('accounting_pages.non_physical_accounts') }}" id="dnd-filter-form">
+            <div class="mb-3">
+                <div class="d-flex flex-wrap justify-content-between align-items-center mb-2 gap-2">
+                    <label class="form-label fw-bold mb-0">Filter by Accounts (Drag &amp; Drop)</label>
+                    <div class="d-flex flex-wrap gap-2 align-items-center">
+                        <button type="button" class="btn btn-sm btn-outline-success py-0 px-2" id="dnd-btn-save-default"
+                            title="Save current combination as default for future sessions">
+                            ★ Save Default
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-danger py-0 px-2 d-none"
+                            id="dnd-btn-clear-default" title="Clear saved default combination">
+                            Clear Default
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-primary py-0 px-2" id="dnd-btn-include-all">
+                            Include All
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" id="dnd-btn-clear-all">
+                            Clear All
+                        </button>
+                    </div>
+                </div>
+                <p class="text-muted small mb-2">
+                    Drag and drop account badges between containers (or click their <span
+                        class="badge bg-secondary-subtle text-secondary py-0 px-1">+</span> / <span
+                        class="badge bg-secondary-subtle text-secondary py-0 px-1">✕</span> icons) to choose which
+                    non-physical accounts to include in the valuation.
+                </p>
+
+                <div class="row g-3">
+                    <!-- Included Accounts (Active Zone) -->
+                    <div class="col-md-6">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="small fw-semibold text-success">
+                                ✓ Included in Valuation (<span id="included-count">0</span>)
+                            </span>
+                        </div>
+                        <div class="dnd-bucket dnd-bucket-included" id="dnd-included-zone" data-zone="included">
+                            <div class="dnd-empty-hint d-none" id="included-empty-hint">Drag accounts here to track
+                                their valuation</div>
+                            {% for acc in valuation_view.accounts %}
+                            {% if not valuation_view.selected_account_ids or acc.id in
+                            valuation_view.selected_account_ids or (valuation_view.selected_account_id and acc.id ==
+                            valuation_view.selected_account_id) %}
+                            <div class="dnd-chip" draggable="true" data-account-id="{{ acc.id }}"
+                                data-account-name="{{ acc.name }}" id="chip-acc-{{ acc.id }}">
+                                <span class="dnd-chip-handle">⠿</span>
+                                <span>{{ acc.name }}</span>
+                                <button type="button" class="dnd-chip-btn" title="Exclude from valuation"
+                                    aria-label="Exclude {{ acc.name }}">✕</button>
+                            </div>
+                            {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Excluded Accounts (Available Zone) -->
+                    <div class="col-md-6">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="small fw-semibold text-muted">
+                                ✕ Excluded from Valuation (<span id="excluded-count">0</span>)
+                            </span>
+                        </div>
+                        <div class="dnd-bucket" id="dnd-excluded-zone" data-zone="excluded">
+                            <div class="dnd-empty-hint d-none" id="excluded-empty-hint">No accounts excluded (all are
+                                currently tracked)</div>
+                            {% for acc in valuation_view.accounts %}
+                            {% if valuation_view.selected_account_ids and acc.id not in
+                            valuation_view.selected_account_ids and (not valuation_view.selected_account_id or acc.id !=
+                            valuation_view.selected_account_id) %}
+                            <div class="dnd-chip" draggable="true" data-account-id="{{ acc.id }}"
+                                data-account-name="{{ acc.name }}" id="chip-acc-{{ acc.id }}">
+                                <span class="dnd-chip-handle">⠿</span>
+                                <span>{{ acc.name }}</span>
+                                <button type="button" class="dnd-chip-btn" title="Include in valuation"
+                                    aria-label="Include {{ acc.name }}">+</button>
+                            </div>
+                            {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Hidden container for submitted account_ids -->
+            <div id="hidden-account-inputs">
+                {% for acc in valuation_view.accounts %}
+                {% if not valuation_view.selected_account_ids or acc.id in valuation_view.selected_account_ids or
+                (valuation_view.selected_account_id and acc.id == valuation_view.selected_account_id) %}
+                <input type="hidden" name="account_ids" value="{{ acc.id }}">
+                {% endif %}
+                {% endfor %}
+            </div>
+
+            <div class="d-flex justify-content-end gap-2 pt-2 border-top">
+                <a href="{{ url_for('accounting_pages.non_physical_accounts', all=1) }}"
+                    class="btn btn-outline-secondary btn-sm">Reset</a>
+                <button type="submit" class="btn btn-primary btn-sm px-4">Apply Filter</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Monthly Valuation Progression Chart -->
+<!--non_physical_accounts_chart this comment is to check that the chart is reached on test-->
+<div class="card shadow-sm overflow-hidden">
+    <div class="card-header bg-surface py-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <div>
+            <h5 class="mb-0 fw-bold fs-6 text-dark">Valuation Progression</h5>
+            <span class="text-muted small">Historical valuation trend over time (Period vs. Balance)</span>
+        </div>
+        {% if valuation_view.monthly_entries %}
+        <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-1 font-mono-num">
+            {{ valuation_view.monthly_entries|length }} Periods
+        </span>
+        {% endif %}
+    </div>
+    <div class="card-body p-4">
+        {% if valuation_view.monthly_entries %}
+        <div class="position-relative w-100" style="min-height: 360px; height: 420px;">
+            <canvas id="nonPhysicalValuationChart"></canvas>
+        </div>
+
+        <script id="valuationChartData" type="application/json">
+        [
+            {% for entry in valuation_view.monthly_entries|reverse %}
+            {
+                "period": {{ entry.month_label|tojson }},
+                "year_month": {{ entry.year_month|tojson }},
+                "total_balance": {{ entry.total_balance|float }},
+                "total_net_change": {{ entry.total_net_change|float }},
+                "account_values": [
+                    {% for acc in entry.account_values %}
+                    {
+                        "id": {{ acc.account_id }},
+                        "name": {{ acc.account_name|tojson }},
+                        "balance": {{ acc.balance|float }},
+                        "net_change": {{ acc.net_change|float }}
+                    }{% if not loop.last %},{% endif %}
+                    {% endfor %}
+                ]
+            }{% if not loop.last %},{% endif %}
+            {% endfor %}
+        ]
+        </script>
+        {% else %}
+        <div class="text-center py-5">
+            <p class="text-muted mb-3">No transaction activity recorded for non-physical accounts in the selected range.
+            </p>
+            <a href="{{ url_for('accounting_pages.new_transaction') }}" class="btn btn-primary">
+                Record Transaction
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% if valuation_view.monthly_entries %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const rawDataElement = document.getElementById('valuationChartData');
+        const canvasElement = document.getElementById('nonPhysicalValuationChart');
+        if (!rawDataElement || !canvasElement || typeof Chart === 'undefined') {
+            return;
+        }
+
+        let chartData = [];
+        try {
+            chartData = JSON.parse(rawDataElement.textContent || '[]');
+        } catch (e) {
+            console.error('Failed to parse valuation chart data:', e);
+            return;
+        }
+
+        if (!chartData || chartData.length === 0) return;
+
+        const labels = chartData.map(function (d) { return d.period; });
+        const totalBalances = chartData.map(function (d) { return d.total_balance; });
+
+        const ctx = canvasElement.getContext('2d');
+        const gradient = ctx.createLinearGradient(0, 0, 0, 380);
+        gradient.addColorStop(0, 'rgba(15, 23, 42, 0.16)');
+        gradient.addColorStop(1, 'rgba(15, 23, 42, 0.01)');
+
+        const datasets = [
+            {
+                label: 'Total Valuation',
+                data: totalBalances,
+                borderColor: '#0f172a',
+                backgroundColor: gradient,
+                borderWidth: 2.5,
+                fill: true,
+                tension: 0.3,
+                pointRadius: 4,
+                pointHoverRadius: 7,
+                pointBackgroundColor: '#ffffff',
+                pointBorderColor: '#0f172a',
+                pointBorderWidth: 2,
+            }
+        ];
+
+        const distinctAccounts = new Map();
+        chartData.forEach(function (entry) {
+            (entry.account_values || []).forEach(function (acc) {
+                if (!distinctAccounts.has(acc.id)) {
+                    distinctAccounts.set(acc.id, acc.name);
+                }
+            });
+        });
+
+        if (distinctAccounts.size > 1) {
+            const palette = [
+                { border: '#0284c7', bg: 'rgba(2, 132, 199, 0.1)' },
+                { border: '#059669', bg: 'rgba(5, 150, 105, 0.1)' },
+                { border: '#7c3aed', bg: 'rgba(124, 58, 237, 0.1)' },
+                { border: '#d97706', bg: 'rgba(217, 119, 6, 0.1)' },
+                { border: '#db2777', bg: 'rgba(219, 39, 119, 0.1)' }
+            ];
+
+            let colorIndex = 0;
+            distinctAccounts.forEach(function (name, id) {
+                const color = palette[colorIndex % palette.length];
+                colorIndex++;
+                const accBalances = chartData.map(function (entry) {
+                    const match = (entry.account_values || []).find(function (a) { return a.id === id; });
+                    return match ? match.balance : null;
+                });
+
+                datasets.push({
+                    label: name,
+                    data: accBalances,
+                    borderColor: color.border,
+                    borderDash: [5, 4],
+                    borderWidth: 1.8,
+                    fill: false,
+                    tension: 0.3,
+                    pointRadius: 3,
+                    pointHoverRadius: 5,
+                    pointBackgroundColor: color.border,
+                });
+            });
+        }
+
+        const currencyFormatter = new Intl.NumberFormat('en-GB', {
+            style: 'currency',
+            currency: 'GBP',
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+        });
+
+        new Chart(canvasElement, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: datasets,
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
+                },
+                plugins: {
+                    legend: {
+                        display: distinctAccounts.size > 1,
+                        position: 'top',
+                        align: 'end',
+                        labels: {
+                            boxWidth: 14,
+                            boxHeight: 14,
+                            usePointStyle: true,
+                            font: {
+                                family: "'Plus Jakarta Sans', sans-serif",
+                                size: 12,
+                                weight: '500',
+                            },
+                            color: '#475569',
+                        },
+                    },
+                    tooltip: {
+                        backgroundColor: '#0f172a',
+                        titleColor: '#ffffff',
+                        titleFont: {
+                            family: "'Plus Jakarta Sans', sans-serif",
+                            size: 13,
+                            weight: '700',
+                        },
+                        bodyColor: '#e2e8f0',
+                        bodyFont: {
+                            family: "'JetBrains Mono', monospace",
+                            size: 12,
+                        },
+                        padding: 12,
+                        cornerRadius: 8,
+                        callbacks: {
+                            label: function (context) {
+                                const val = context.raw;
+                                if (val === null || val === undefined) return '';
+                                return ' ' + context.dataset.label + ': ' + currencyFormatter.format(val);
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Period',
+                            color: '#64748b',
+                            font: {
+                                family: "'Plus Jakarta Sans', sans-serif",
+                                size: 12,
+                                weight: '600',
+                            },
+                        },
+                        grid: {
+                            color: 'rgba(226, 232, 240, 0.6)',
+                            drawBorder: false,
+                        },
+                        ticks: {
+                            color: '#64748b',
+                            font: {
+                                family: "'Plus Jakarta Sans', sans-serif",
+                                size: 12,
+                            },
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Valuation (£)',
+                            color: '#64748b',
+                            font: {
+                                family: "'Plus Jakarta Sans', sans-serif",
+                                size: 12,
+                                weight: '600',
+                            },
+                        },
+                        grid: {
+                            color: 'rgba(226, 232, 240, 0.6)',
+                            drawBorder: false,
+                        },
+                        ticks: {
+                            color: '#64748b',
+                            font: {
+                                family: "'JetBrains Mono', monospace",
+                                size: 12,
+                            },
+                            callback: function (value) {
+                                return currencyFormatter.format(value);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endif %}
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const STORAGE_KEY = 'np_valuation_default_accounts';
+        const btnSaveDefault = document.getElementById('dnd-btn-save-default');
+        const btnClearDefault = document.getElementById('dnd-btn-clear-default');
+
+        // Auto-load default if visiting clean URL without query parameters
+        const searchParams = new URLSearchParams(window.location.search);
+        if (!searchParams.has('account_ids') && !searchParams.has('all')) {
+            try {
+                const savedRaw = localStorage.getItem(STORAGE_KEY);
+                if (savedRaw) {
+                    const savedIds = JSON.parse(savedRaw);
+                    if (Array.isArray(savedIds) && savedIds.length > 0) {
+                        const params = new URLSearchParams();
+                        savedIds.forEach(function (id) { params.append('account_ids', id); });
+                        window.location.replace(window.location.pathname + '?' + params.toString());
+                        return;
+                    }
+                }
+            } catch (err) {
+                console.warn('Could not read default accounts from localStorage:', err);
+            }
+        }
+
+        const includedZone = document.getElementById('dnd-included-zone');
+        const excludedZone = document.getElementById('dnd-excluded-zone');
+        const hiddenInputsContainer = document.getElementById('hidden-account-inputs');
+        const includedCountEl = document.getElementById('included-count');
+        const excludedCountEl = document.getElementById('excluded-count');
+        const includedEmptyHint = document.getElementById('included-empty-hint');
+        const excludedEmptyHint = document.getElementById('excluded-empty-hint');
+        const btnIncludeAll = document.getElementById('dnd-btn-include-all');
+        const btnClearAll = document.getElementById('dnd-btn-clear-all');
+
+        if (!includedZone || !excludedZone || !hiddenInputsContainer) return;
+
+        let draggedItem = null;
+
+        function syncUI() {
+            const includedChips = Array.from(includedZone.querySelectorAll('.dnd-chip'));
+            const excludedChips = Array.from(excludedZone.querySelectorAll('.dnd-chip'));
+
+            if (includedCountEl) includedCountEl.textContent = includedChips.length;
+            if (excludedCountEl) excludedCountEl.textContent = excludedChips.length;
+
+            if (includedEmptyHint) {
+                if (includedChips.length === 0) {
+                    includedEmptyHint.classList.remove('d-none');
+                } else {
+                    includedEmptyHint.classList.add('d-none');
+                }
+            }
+            if (excludedEmptyHint) {
+                if (excludedChips.length === 0) {
+                    excludedEmptyHint.classList.remove('d-none');
+                } else {
+                    excludedEmptyHint.classList.add('d-none');
+                }
+            }
+
+            includedChips.forEach(function (chip) {
+                const btn = chip.querySelector('.dnd-chip-btn');
+                if (btn) {
+                    btn.textContent = '✕';
+                    btn.title = 'Exclude from valuation';
+                    btn.setAttribute('aria-label', 'Exclude ' + (chip.getAttribute('data-account-name') || 'account'));
+                }
+            });
+            excludedChips.forEach(function (chip) {
+                const btn = chip.querySelector('.dnd-chip-btn');
+                if (btn) {
+                    btn.textContent = '+';
+                    btn.title = 'Include in valuation';
+                    btn.setAttribute('aria-label', 'Include ' + (chip.getAttribute('data-account-name') || 'account'));
+                }
+            });
+
+            hiddenInputsContainer.innerHTML = '';
+            includedChips.forEach(function (chip) {
+                const accId = chip.getAttribute('data-account-id');
+                if (accId) {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'account_ids';
+                    input.value = accId;
+                    hiddenInputsContainer.appendChild(input);
+                }
+            });
+        }
+
+        function setupChip(chip) {
+            chip.addEventListener('dragstart', function (e) {
+                draggedItem = chip;
+                chip.classList.add('dragging');
+                if (e.dataTransfer) {
+                    e.dataTransfer.setData('text/plain', chip.getAttribute('data-account-id') || '');
+                    e.dataTransfer.effectAllowed = 'move';
+                }
+            });
+
+            chip.addEventListener('dragend', function () {
+                chip.classList.remove('dragging');
+                draggedItem = null;
+                document.querySelectorAll('.dnd-bucket').forEach(function (b) {
+                    b.classList.remove('drag-over');
+                });
+            });
+
+            const btn = chip.querySelector('.dnd-chip-btn');
+            if (btn) {
+                btn.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    if (chip.parentElement === includedZone) {
+                        excludedZone.appendChild(chip);
+                    } else {
+                        includedZone.appendChild(chip);
+                    }
+                    syncUI();
+                });
+            }
+        }
+
+        [includedZone, excludedZone].forEach(function (zone) {
+            zone.addEventListener('dragover', function (e) {
+                e.preventDefault();
+                if (e.dataTransfer) {
+                    e.dataTransfer.dropEffect = 'move';
+                }
+                zone.classList.add('drag-over');
+            });
+
+            zone.addEventListener('dragleave', function (e) {
+                if (e.target === zone) {
+                    zone.classList.remove('drag-over');
+                }
+            });
+
+            zone.addEventListener('drop', function (e) {
+                e.preventDefault();
+                zone.classList.remove('drag-over');
+                if (draggedItem && draggedItem.parentElement !== zone) {
+                    zone.appendChild(draggedItem);
+                    syncUI();
+                }
+            });
+        });
+
+        if (btnIncludeAll) {
+            btnIncludeAll.addEventListener('click', function () {
+                const chips = Array.from(excludedZone.querySelectorAll('.dnd-chip'));
+                chips.forEach(function (c) { includedZone.appendChild(c); });
+                syncUI();
+            });
+        }
+
+        if (btnClearAll) {
+            btnClearAll.addEventListener('click', function () {
+                const chips = Array.from(includedZone.querySelectorAll('.dnd-chip'));
+                chips.forEach(function (c) { excludedZone.appendChild(c); });
+                syncUI();
+            });
+        }
+
+        function checkSavedDefaultState() {
+            if (!btnClearDefault) return;
+            try {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (saved) {
+                    btnClearDefault.classList.remove('d-none');
+                } else {
+                    btnClearDefault.classList.add('d-none');
+                }
+            } catch (e) {
+                btnClearDefault.classList.add('d-none');
+            }
+        }
+
+        if (btnSaveDefault) {
+            btnSaveDefault.addEventListener('click', function () {
+                const includedChips = Array.from(includedZone.querySelectorAll('.dnd-chip'));
+                const ids = includedChips.map(function (c) {
+                    return c.getAttribute('data-account-id');
+                }).filter(Boolean);
+
+                if (ids.length === 0) {
+                    alert('Please include at least one account to save as default.');
+                    return;
+                }
+
+                try {
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(ids));
+                    const originalHtml = btnSaveDefault.innerHTML;
+                    btnSaveDefault.innerHTML = '✓ Saved!';
+                    btnSaveDefault.classList.remove('btn-outline-success');
+                    btnSaveDefault.classList.add('btn-success', 'text-white');
+                    setTimeout(function () {
+                        btnSaveDefault.innerHTML = originalHtml;
+                        btnSaveDefault.classList.remove('btn-success', 'text-white');
+                        btnSaveDefault.classList.add('btn-outline-success');
+                    }, 1800);
+                    checkSavedDefaultState();
+                } catch (err) {
+                    console.error('Could not save default accounts to localStorage:', err);
+                }
+            });
+        }
+
+        if (btnClearDefault) {
+            btnClearDefault.addEventListener('click', function () {
+                try {
+                    localStorage.removeItem(STORAGE_KEY);
+                    checkSavedDefaultState();
+                } catch (err) {
+                    console.error('Could not clear default accounts:', err);
+                }
+            });
+        }
+
+        document.querySelectorAll('.dnd-chip').forEach(setupChip);
+        syncUI();
+        checkSavedDefaultState();
+    });
+</script>
+
+{% else %}
+<!-- Empty State: No Non-Physical Accounts Configured -->
+<div class="card shadow-sm border-0 text-center py-5">
+    <div class="card-body">
+        <div class="mb-3">
+            <span class="display-4">🌐</span>
+        </div>
+        <h4 class="fw-bold mb-2">No Non-Physical Accounts Found</h4>
+        <p class="text-muted col-md-6 mx-auto mb-4">
+            You do not currently have any accounts marked as non-physical (<code
+                class="text-secondary">is_physical = False</code>). Create virtual, intangible, or investment accounts
+            to track their financial valuation over time.
+        </p>
+        <a href="{{ url_for('accounting_pages.new_account') }}" class="btn btn-primary px-4 py-2">
+            + Create Non-Physical Account
+        </a>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

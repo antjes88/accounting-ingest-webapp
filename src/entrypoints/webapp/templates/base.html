@@ -57,6 +57,7 @@
             {% if session.get('logged_in') %}
             <div class="d-flex align-items-center gap-2">
                 <a href="{{ url_for('accounting_pages.list_transactions') }}" class="nav-link-custom">Transactions</a>
+                <a href="{{ url_for('accounting_pages.non_physical_accounts') }}" class="nav-link-custom">Valuation</a>
                 <a href="{{ url_for('accounting_pages.new_transaction') }}" class="nav-link-custom">+ Entry</a>
                 <a href="{{ url_for('login_page.logout') }}" class="btn btn-outline-secondary btn-sm ms-2">Logout</a>
             </div>

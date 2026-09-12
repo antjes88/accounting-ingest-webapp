@@ -6,10 +6,16 @@ from typing import Optional, Any
 from unittest.mock import patch
 
 from repository import PostgresRepository
-from src import model
+from src import model, services
 from src.entrypoints.webapp.app import server
-from src.entrypoints.webapp.blueprints.accounting.forms import DeleteTransactionForm
-from tests.helpers.sample_data import cash_account
+from src.entrypoints.webapp.blueprints.accounting.forms import (
+    DeleteTransactionForm,
+    NonPhysicalValuationFilterForm,
+    NonPhysicalAccountOptionDTO,
+    NonPhysicalAccountOptionDTO,
+)
+from src.dto import CreateAccountDTO, CreateTransactionDTO
+from tests.helpers.sample_data import cash_account, base_salary_account
 
 
 def test_new_transaction_page_is_reached(client_logged_in: FlaskClient):
@@ -514,3 +520,279 @@ def test_delete_transaction_form_to_dto_raises_value_error_on_invalid_id(
 
         with pytest.raises(ValueError, match="Transaction ID must be a valid integer."):
             form.to_dto()
+
+
+def test_non_physical_accounts_page_is_reached(
+    client_logged_in: FlaskClient, repo_with_data: PostgresRepository
+):
+    """
+    GIVEN a logged-in client
+    WHEN the client requests the non-physical accounts valuation page
+    THEN the response status code should be 200 and the HTML test comment should be present.
+    """
+    response = client_logged_in.get(
+        "/accounting/non_physical_accounts",
+        follow_redirects=True,
+    )
+
+    assert 200 == response.status_code
+    assert (
+        b"<!--non_physical_accounts_valuation this comment is to check that it is reached on test-->"
+        in response.data
+    )
+
+
+def test_non_physical_accounts_page_empty_state(
+    client_logged_in: FlaskClient, repo_with_data: PostgresRepository
+):
+    """
+    GIVEN a logged-in client and no non-physical accounts configured
+    WHEN the client requests the non-physical accounts valuation page
+    THEN the empty state card should be rendered with instructions to create an account.
+    """
+    response = client_logged_in.get(
+        "/accounting/non_physical_accounts",
+        follow_redirects=True,
+    )
+
+    assert 200 == response.status_code
+    assert b"No Non-Physical Accounts Found" in response.data
+
+
+def test_non_physical_accounts_page_with_data(
+    client_logged_in: FlaskClient, repo_with_data: PostgresRepository
+):
+    """
+    GIVEN a logged-in client and a repository with a non-physical account and transactions
+    WHEN the client requests the non-physical accounts valuation page
+    THEN the valuation progression and account summary should be displayed.
+    """
+
+    services.record_new_account(
+        repo_with_data,
+        CreateAccountDTO(
+            account_type_id=model.AccountType.ASSET.id,
+            name="Crypto Fund",
+            is_physical=False,
+            is_archived=False,
+            father_account_id=cash_account.id,
+        ),
+    )
+    chart = repo_with_data.get_chart_of_accounts()
+    crypto = chart.get_account_by_name("Crypto Fund")
+    assert crypto and crypto.id
+
+    services.record_new_transaction(
+        repo_with_data,
+        CreateTransactionDTO(
+            date=dt.date(2024, 1, 15),
+            amount=Decimal("250.00"),
+            debit_account_id=crypto.id,
+            credit_account_id=base_salary_account.id,  # type: ignore
+        ),
+    )
+
+    response = client_logged_in.get(
+        "/accounting/non_physical_accounts",
+        follow_redirects=True,
+    )
+
+    assert response.status_code == 200
+    assert (
+        b"<!--non_physical_accounts_dnd_filter this comment is to check that the drag and drop filter is reached on test-->"
+        in response.data
+    )
+    assert (
+        b"<!--non_physical_accounts_default_persistence this comment is to check that default persistence controls are reached on test-->"
+        in response.data
+    )
+    assert b"dnd-included-zone" in response.data
+    assert b"dnd-excluded-zone" in response.data
+    assert b"dnd-btn-save-default" in response.data
+    assert (
+        b"<!--non_physical_accounts_chart this comment is to check that the chart is reached on test-->"
+        in response.data
+    )
+    assert b"nonPhysicalValuationChart" in response.data
+    assert b"valuationChartData" in response.data
+    assert b"Crypto Fund" in response.data
+    assert b"250.00" in response.data
+
+
+def test_non_physical_accounts_page_handles_value_error(
+    client_logged_in: FlaskClient, repo_with_data: PostgresRepository
+):
+    """
+    GIVEN a logged-in client requesting non-physical accounts valuation
+    WHEN the services layer raises a ValueError
+    THEN the response status should be 200 and a warning flash message displayed.
+    """
+    with patch(
+        "src.entrypoints.webapp.blueprints.accounting.routes.services.get_non_physical_accounts_valuation",
+        side_effect=ValueError("Test valuation validation error"),
+    ):
+        response = client_logged_in.get(
+            "/accounting/non_physical_accounts",
+            follow_redirects=True,
+        )
+
+    assert response.status_code == 200
+    assert b"Error loading valuation: Test valuation validation error" in response.data
+
+
+def test_non_physical_accounts_page_handles_unexpected_exception(
+    client_logged_in: FlaskClient, repo_with_data: PostgresRepository
+):
+    """
+    GIVEN a logged-in client requesting non-physical accounts valuation
+    WHEN the services layer raises an unexpected Exception
+    THEN the response status should be 200 and a generic error flash message displayed.
+    """
+    with patch(
+        "src.entrypoints.webapp.blueprints.accounting.routes.services.get_non_physical_accounts_valuation",
+        side_effect=Exception("Database crash"),
+    ):
+        response = client_logged_in.get(
+            "/accounting/non_physical_accounts",
+            follow_redirects=True,
+        )
+
+    assert response.status_code == 200
+    assert (
+        b"An unexpected error occurred while loading non-physical accounts valuation."
+        in response.data
+    )
+
+
+def test_non_physical_valuation_filter_form_to_dto(webapp_client: FlaskClient):
+    """
+    GIVEN a NonPhysicalValuationFilterForm with account ID
+    WHEN to_dto is called
+    THEN it should accurately map to NonPhysicalValuationFilterDTO without dates.
+    """
+
+    with server.test_request_context():
+        opts = [
+            NonPhysicalAccountOptionDTO(
+                id=10,
+                name="Digital Asset",
+                account_type_id=1,
+                account_type_name="Asset",
+                is_father_account=False,
+            )
+        ]
+        form = NonPhysicalValuationFilterForm(account_options=opts)
+        form.account_id.data = "10"
+
+        dto = form.to_dto()
+        form.account_id.data = "invalid_id"
+        dto_invalid = form.to_dto()
+
+        assert dto.account_id == 10
+        assert dto.start_date is None
+        assert dto.end_date is None
+        assert dto_invalid.account_id is None
+
+
+def test_non_physical_valuation_filter_form_to_dto_multi_accounts(
+    webapp_client: FlaskClient,
+):
+    """
+    GIVEN a NonPhysicalValuationFilterForm with multiple account_ids
+    WHEN to_dto is called
+    THEN it should accurately map the tuple of account_ids into NonPhysicalValuationFilterDTO.
+    """
+
+    with server.test_request_context():
+        opts = [
+            NonPhysicalAccountOptionDTO(
+                id=1,
+                name="Crypto A",
+                account_type_id=1,
+                account_type_name="Asset",
+                is_father_account=False,
+            ),
+            NonPhysicalAccountOptionDTO(
+                id=2,
+                name="Crypto B",
+                account_type_id=1,
+                account_type_name="Asset",
+                is_father_account=False,
+            ),
+        ]
+        form = NonPhysicalValuationFilterForm(account_options=opts)
+        form.account_ids.data = ["1", "2", "invalid_ignored"]
+
+        dto = form.to_dto()
+
+        assert dto.account_ids == (1, 2)
+        assert dto.start_date is None
+        assert dto.end_date is None
+
+
+def test_non_physical_accounts_page_filter_by_multiple_account_ids_query_params(
+    client_logged_in: FlaskClient, repo_with_data: PostgresRepository
+):
+    """
+    GIVEN a logged-in client and multiple non-physical accounts in the database
+    WHEN requesting the valuation page with multiple account_ids query parameters
+    THEN the response status should be 200 and only selected accounts included.
+    """
+
+    chart = repo_with_data.get_chart_of_accounts()
+    cash = chart.get_account_by_name("Cash")
+    salary = chart.get_account_by_name("Base Salary")
+    assert cash and cash.id and salary and salary.id
+
+    services.record_new_account(
+        repo_with_data,
+        CreateAccountDTO(
+            account_type_id=model.AccountType.ASSET.id,
+            name="Alpha Crypto",
+            is_physical=False,
+            is_archived=False,
+            father_account_id=cash.id,
+        ),
+    )
+    services.record_new_account(
+        repo_with_data,
+        CreateAccountDTO(
+            account_type_id=model.AccountType.ASSET.id,
+            name="Beta Crypto",
+            is_physical=False,
+            is_archived=False,
+            father_account_id=cash.id,
+        ),
+    )
+    updated_chart = repo_with_data.get_chart_of_accounts()
+    alpha = updated_chart.get_account_by_name("Alpha Crypto")
+    beta = updated_chart.get_account_by_name("Beta Crypto")
+    assert alpha and beta and alpha.id and beta.id
+
+    services.record_new_transaction(
+        repo_with_data,
+        CreateTransactionDTO(
+            date=dt.date(2024, 3, 15),
+            amount=Decimal("120.00"),
+            debit_account_id=alpha.id,
+            credit_account_id=salary.id,
+        ),
+    )
+    services.record_new_transaction(
+        repo_with_data,
+        CreateTransactionDTO(
+            date=dt.date(2024, 3, 20),
+            amount=Decimal("380.00"),
+            debit_account_id=beta.id,
+            credit_account_id=salary.id,
+        ),
+    )
+
+    response = client_logged_in.get(
+        f"/accounting/non_physical_accounts?account_ids={alpha.id}",
+        follow_redirects=True,
+    )
+
+    assert response.status_code == 200
+    assert b"Alpha Crypto" in response.data
+    assert b"120.00" in response.data

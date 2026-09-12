@@ -1,6 +1,15 @@
 from typing import Optional
+from decimal import Decimal
 
 from src import repository, model
+from src.utils.helpers import (
+    filter_entries_by_date,
+    to_account_options,
+    resolve_active_accounts,
+    aggregate_monthly_account_changes,
+    build_monthly_valuation_entries,
+    build_empty_non_physical_valuation_view,
+)
 from src.dto import (
     CreateTransactionDTO,
     CreateAccountDTO,
@@ -10,6 +19,9 @@ from src.dto import (
     TransactionViewDTO,
     TransactionFilterDTO,
     DeleteTransactionDTO,
+    NonPhysicalAccountOptionDTO,
+    NonPhysicalValuationFilterDTO,
+    NonPhysicalValuationViewDTO,
 )
 
 
@@ -150,3 +162,65 @@ def delete_transaction(
         raise ValueError(f"Invalid transaction ID: {transaction_dto.transaction_id}")
 
     repo.delete_transaction(transaction_id=transaction_dto.transaction_id)
+
+
+def get_non_physical_account_options(
+    repo: repository.AbstractRepository,
+) -> list[NonPhysicalAccountOptionDTO]:
+    chart = repo.get_chart_of_accounts()
+    target_accounts = [
+        acc for acc in chart.non_physical_accounts if not acc.is_father_account
+    ]
+
+    return list(to_account_options(target_accounts))
+
+
+def get_non_physical_accounts_valuation(
+    repo: repository.AbstractRepository,
+    filter_dto: Optional[NonPhysicalValuationFilterDTO] = None,
+) -> NonPhysicalValuationViewDTO:
+    chart = repo.get_chart_of_accounts()
+    all_transactions = repo.get_transactions()
+
+    target_accounts = [
+        acc for acc in chart.non_physical_accounts if not acc.is_father_account
+    ]
+    account_options = to_account_options(target_accounts)
+
+    active_accounts, selected_account_ids = resolve_active_accounts(
+        target_accounts, filter_dto
+    )
+    single_selected_id = (
+        selected_account_ids[0] if len(selected_account_ids) == 1 else None
+    )
+    active_account_ids = {acc.id for acc in active_accounts}
+
+    monthly_changes, has_activity = aggregate_monthly_account_changes(
+        all_transactions, active_account_ids  # type: ignore
+    )
+
+    if not active_accounts or not has_activity:
+        return build_empty_non_physical_valuation_view(
+            account_options, single_selected_id, selected_account_ids
+        )
+
+    generated_entries = build_monthly_valuation_entries(
+        active_accounts, monthly_changes
+    )
+    filtered_entries = filter_entries_by_date(generated_entries, filter_dto)
+
+    total_current_value = (
+        generated_entries[-1].total_balance if generated_entries else Decimal("0.00")
+    )
+    latest_monthly_change = (
+        generated_entries[-1].total_net_change if generated_entries else Decimal("0.00")
+    )
+
+    return NonPhysicalValuationViewDTO(
+        accounts=account_options,
+        selected_account_id=single_selected_id,
+        monthly_entries=tuple(reversed(filtered_entries)),
+        total_current_value=total_current_value,
+        latest_monthly_change=latest_monthly_change,
+        selected_account_ids=selected_account_ids,
+    )

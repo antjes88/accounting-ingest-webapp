@@ -12,6 +12,8 @@ from src.services import (
     get_account_type_options,
     get_all_transactions,
     delete_transaction,
+    get_non_physical_account_options,
+    get_non_physical_accounts_valuation,
 )
 from src.dto import (
     CreateTransactionDTO,
@@ -21,6 +23,8 @@ from src.dto import (
     AccountTypeOptionDTO,
     TransactionViewDTO,
     DeleteTransactionDTO,
+    NonPhysicalValuationFilterDTO,
+    NonPhysicalValuationViewDTO,
 )
 from src import model
 from tests.helpers.sample_data import (
@@ -292,3 +296,344 @@ def test_delete_transaction_raises_value_error_for_invalid_id(
 
     with pytest.raises(ValueError, match=f"Invalid transaction ID: {invalid_id}"):
         delete_transaction(None, dto)  # type: ignore
+
+
+def test_get_non_physical_account_options(repo_with_data: PostgresRepository):
+    """
+    GIVEN a PostgresRepository with existing physical accounts
+    WHEN a new non-physical account is added and get_non_physical_account_options is called
+    THEN the non-physical account should be listed in the returned options.
+    """
+    record_new_account(
+        repo_with_data,
+        CreateAccountDTO(
+            account_type_id=model.AccountType.ASSET.id,
+            name="Crypto Assets",
+            is_physical=False,
+            is_archived=False,
+            father_account_id=cash_account.id,
+        ),
+    )
+
+    options = get_non_physical_account_options(repo_with_data)
+    assert any(opt.name == "Crypto Assets" for opt in options)
+
+
+def test_get_non_physical_accounts_valuation_empty(repo_with_data: PostgresRepository):
+    """
+    GIVEN a repository with only physical accounts
+    WHEN get_non_physical_accounts_valuation is called
+    THEN an empty valuation view DTO should be returned with 0 current value.
+    """
+    valuation = get_non_physical_accounts_valuation(repo_with_data)
+    assert isinstance(valuation, NonPhysicalValuationViewDTO)
+    assert len(valuation.accounts) == 0
+    assert len(valuation.monthly_entries) == 0
+    assert valuation.total_current_value == Decimal("0.00")
+
+
+def test_get_non_physical_accounts_valuation_with_accounts_but_no_activity(
+    repo_with_data: PostgresRepository,
+):
+    """
+    GIVEN a repository with a non-physical account and transactions only affecting physical accounts
+    WHEN get_non_physical_accounts_valuation is called
+    THEN an empty valuation view DTO should be returned with accounts populated and 0 current value.
+    """
+    record_new_account(
+        repo_with_data,
+        CreateAccountDTO(
+            account_type_id=model.AccountType.ASSET.id,
+            name="Inactive Crypto Wallet",
+            is_physical=False,
+            is_archived=False,
+            father_account_id=cash_account.id,
+        ),
+    )
+    record_new_transaction(
+        repo_with_data,
+        CreateTransactionDTO(
+            date=date(2024, 1, 15),
+            amount=Decimal("100.00"),
+            description="Physical transfer",
+            debit_account_id=petty_cash_account.id,  # type: ignore
+            credit_account_id=base_salary_account.id,  # type: ignore
+        ),
+    )
+
+    valuation = get_non_physical_accounts_valuation(repo_with_data)
+    assert isinstance(valuation, NonPhysicalValuationViewDTO)
+    assert len(valuation.accounts) == 1
+    assert valuation.accounts[0].name == "Inactive Crypto Wallet"
+    assert len(valuation.monthly_entries) == 0
+    assert valuation.total_current_value == Decimal("0.00")
+    assert valuation.latest_monthly_change == Decimal("0.00")
+
+
+def test_get_non_physical_accounts_valuation_with_transactions(
+    repo_with_data: PostgresRepository,
+):
+    """
+    GIVEN a repository with a non-physical account and transactions in Jan and Mar 2024
+    WHEN get_non_physical_accounts_valuation is called
+    THEN monthly entries should include Jan, Feb (gap maintained), and Mar with correct running balances.
+    """
+    record_new_account(
+        repo_with_data,
+        CreateAccountDTO(
+            account_type_id=model.AccountType.ASSET.id,
+            name="Crypto Wallet",
+            is_physical=False,
+            is_archived=False,
+            father_account_id=cash_account.id,
+        ),
+    )
+    chart = repo_with_data.get_chart_of_accounts()
+    crypto_acc = chart.get_account_by_name("Crypto Wallet")
+    assert crypto_acc is not None
+    assert crypto_acc.id is not None
+
+    record_new_transaction(
+        repo_with_data,
+        CreateTransactionDTO(
+            date=date(2024, 1, 15),
+            amount=Decimal("100.00"),
+            debit_account_id=crypto_acc.id,
+            credit_account_id=base_salary_account.id,  # type: ignore
+            description="Buy crypto Jan",
+        ),
+    )
+    record_new_transaction(
+        repo_with_data,
+        CreateTransactionDTO(
+            date=date(2024, 3, 10),
+            amount=Decimal("50.00"),
+            debit_account_id=crypto_acc.id,
+            credit_account_id=base_salary_account.id,  # type: ignore
+            description="Buy crypto Mar",
+        ),
+    )
+
+    valuation = get_non_physical_accounts_valuation(repo_with_data)
+
+    assert len(valuation.monthly_entries) == 3
+    # Newest first
+    mar_entry, feb_entry, jan_entry = valuation.monthly_entries
+
+    assert jan_entry.year_month == "2024-01"
+    assert jan_entry.total_net_change == Decimal("100.00")
+    assert jan_entry.total_balance == Decimal("100.00")
+
+    assert feb_entry.year_month == "2024-02"
+    assert feb_entry.total_net_change == Decimal("0.00")
+    assert feb_entry.total_balance == Decimal("100.00")
+
+    assert mar_entry.year_month == "2024-03"
+    assert mar_entry.total_net_change == Decimal("50.00")
+    assert mar_entry.total_balance == Decimal("150.00")
+
+    assert valuation.total_current_value == Decimal("150.00")
+    assert valuation.latest_monthly_change == Decimal("50.00")
+
+
+def test_get_non_physical_accounts_valuation_filter_by_account_and_date(
+    repo_with_data: PostgresRepository,
+):
+    """
+    GIVEN a repository with multiple non-physical accounts and transactions
+    WHEN filtering by account ID and date range
+    THEN only the filtered account and months within the date range should be returned.
+    """
+    record_new_account(
+        repo_with_data,
+        CreateAccountDTO(
+            account_type_id=model.AccountType.ASSET.id,
+            name="Crypto Wallet 1",
+            is_physical=False,
+            is_archived=False,
+            father_account_id=cash_account.id,
+        ),
+    )
+    record_new_account(
+        repo_with_data,
+        CreateAccountDTO(
+            account_type_id=model.AccountType.ASSET.id,
+            name="Crypto Wallet 2",
+            is_physical=False,
+            is_archived=False,
+            father_account_id=cash_account.id,
+        ),
+    )
+    chart = repo_with_data.get_chart_of_accounts()
+    w1 = chart.get_account_by_name("Crypto Wallet 1")
+    w2 = chart.get_account_by_name("Crypto Wallet 2")
+    assert w1 and w2 and w1.id and w2.id
+
+    record_new_transaction(
+        repo_with_data,
+        CreateTransactionDTO(
+            date=date(2024, 1, 15),
+            amount=Decimal("100.00"),
+            debit_account_id=w1.id,
+            credit_account_id=base_salary_account.id,  # type: ignore
+        ),
+    )
+    record_new_transaction(
+        repo_with_data,
+        CreateTransactionDTO(
+            date=date(2024, 2, 10),
+            amount=Decimal("200.00"),
+            debit_account_id=w2.id,
+            credit_account_id=base_salary_account.id,  # type: ignore
+        ),
+    )
+
+    filter_dto = NonPhysicalValuationFilterDTO(
+        account_id=w1.id,
+        start_date=date(2024, 1, 1),
+        end_date=date(2024, 1, 31),
+    )
+    valuation = get_non_physical_accounts_valuation(repo_with_data, filter_dto)
+
+    assert len(valuation.monthly_entries) == 1
+    assert valuation.monthly_entries[0].year_month == "2024-01"
+    assert valuation.monthly_entries[0].total_balance == Decimal("100.00")
+    assert valuation.selected_account_id == w1.id
+
+
+def test_get_non_physical_accounts_valuation_raises_for_invalid_account_id(
+    repo_with_data: PostgresRepository,
+):
+    """
+    GIVEN a repository with non-physical accounts
+    WHEN filtering by an account ID that is not a non-physical account
+    THEN a ValueError should be raised.
+    """
+    record_new_account(
+        repo_with_data,
+        CreateAccountDTO(
+            account_type_id=model.AccountType.ASSET.id,
+            name="NFT Fund",
+            is_physical=False,
+            is_archived=False,
+            father_account_id=cash_account.id,
+        ),
+    )
+    with pytest.raises(
+        ValueError, match="Account with ID 9999 is not a valid non-physical account."
+    ):
+        get_non_physical_accounts_valuation(
+            repo_with_data,
+            NonPhysicalValuationFilterDTO(account_id=9999),
+        )
+
+
+def test_get_non_physical_accounts_valuation_filter_by_multiple_account_ids(
+    repo_with_data: PostgresRepository,
+):
+    """
+    GIVEN a repository with multiple non-physical accounts and transactions
+    WHEN filtering by a tuple of multiple account IDs
+    THEN only the filtered accounts and their combined valuation should be returned.
+    """
+    record_new_account(
+        repo_with_data,
+        CreateAccountDTO(
+            account_type_id=model.AccountType.ASSET.id,
+            name="Multi Token A",
+            is_physical=False,
+            is_archived=False,
+            father_account_id=cash_account.id,
+        ),
+    )
+    record_new_account(
+        repo_with_data,
+        CreateAccountDTO(
+            account_type_id=model.AccountType.ASSET.id,
+            name="Multi Token B",
+            is_physical=False,
+            is_archived=False,
+            father_account_id=cash_account.id,
+        ),
+    )
+    record_new_account(
+        repo_with_data,
+        CreateAccountDTO(
+            account_type_id=model.AccountType.ASSET.id,
+            name="Multi Token C",
+            is_physical=False,
+            is_archived=False,
+            father_account_id=cash_account.id,
+        ),
+    )
+    chart = repo_with_data.get_chart_of_accounts()
+    ta = chart.get_account_by_name("Multi Token A")
+    tb = chart.get_account_by_name("Multi Token B")
+    tc = chart.get_account_by_name("Multi Token C")
+    assert ta and tb and tc and ta.id and tb.id and tc.id
+
+    record_new_transaction(
+        repo_with_data,
+        CreateTransactionDTO(
+            date=date(2024, 1, 10),
+            amount=Decimal("150.00"),
+            debit_account_id=ta.id,
+            credit_account_id=base_salary_account.id,  # type: ignore
+        ),
+    )
+    record_new_transaction(
+        repo_with_data,
+        CreateTransactionDTO(
+            date=date(2024, 1, 15),
+            amount=Decimal("250.00"),
+            debit_account_id=tb.id,
+            credit_account_id=base_salary_account.id,  # type: ignore
+        ),
+    )
+    record_new_transaction(
+        repo_with_data,
+        CreateTransactionDTO(
+            date=date(2024, 1, 20),
+            amount=Decimal("500.00"),
+            debit_account_id=tc.id,
+            credit_account_id=base_salary_account.id,  # type: ignore
+        ),
+    )
+
+    filter_dto = NonPhysicalValuationFilterDTO(
+        account_ids=(ta.id, tb.id),
+    )
+    valuation = get_non_physical_accounts_valuation(repo_with_data, filter_dto)
+
+    assert len(valuation.monthly_entries) == 1
+    assert valuation.monthly_entries[0].total_balance == Decimal("400.00")
+    assert valuation.selected_account_ids == (ta.id, tb.id)
+    assert valuation.selected_account_id is None
+
+
+def test_get_non_physical_accounts_valuation_raises_for_invalid_account_ids(
+    repo_with_data: PostgresRepository,
+):
+    """
+    GIVEN a repository with non-physical accounts
+    WHEN filtering by account_ids containing non-existent or invalid accounts
+    THEN a ValueError should be raised detailing the invalid IDs.
+    """
+    record_new_account(
+        repo_with_data,
+        CreateAccountDTO(
+            account_type_id=model.AccountType.ASSET.id,
+            name="Valid Virtual Account",
+            is_physical=False,
+            is_archived=False,
+            father_account_id=cash_account.id,
+        ),
+    )
+    with pytest.raises(
+        ValueError,
+        match=r"Account ID\(s\) \[8888, 9999\] are not valid non-physical accounts.",
+    ):
+        get_non_physical_accounts_valuation(
+            repo_with_data,
+            NonPhysicalValuationFilterDTO(account_ids=(8888, 9999)),
+        )

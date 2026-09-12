@@ -2,7 +2,7 @@
 
 This repository is a personal double-entry bookkeeping accounting application built with Python and Flask. It provides three complementary interfaces: an interactive **Web Application**, a **RESTful API**, and a **Command Line Interface (CLI)** designed for comprehensive ledger management.
 
-- **Web Application**: Enables users to securely authenticate, manage hierarchical charts of accounts (categorized by type, physical status, and archive state), record financial transactions via dynamic dependent form dropdowns, explore ledger records with date range filtering, and interactively delete transactions.
+- **Web Application**: Enables users to securely authenticate, manage hierarchical charts of accounts (categorized by type, physical status, and archive state), record financial transactions via dynamic dependent form dropdowns, explore ledger records with date range filtering, interactively delete transactions, and track non-physical account valuations with interactive chart visualizations and drag-and-drop filtering.
 - **RESTful API**: Exposes versioned endpoints (`/api/v1/...`) powered by Flask-Smorest and Flask-JWT-Extended. Currently, its capabilities include:
   - **JWT Authentication (`POST /api/v1/auth/login`)**: Secure credential authentication and issuance of Bearer JWT access tokens.
   - **Transaction Ingestion (`POST /api/v1/transactions`)**: Programmatic recording of double-entry transactions with strict Marshmallow schema validation (validating positive amounts, valid integer account identifiers, and ISO dates) and automatic mapping to immutable domain DTOs, returning the assigned `transaction_id` upon creation.
@@ -23,7 +23,30 @@ The Terraform configuration automates the deployment of the Accounting Ingest ap
 - **Dynamic Dependent Form Dropdowns**: Real-time client-side dropdown filtering for postable and parent accounts based on selected account types without requiring page reloads.
 - **Transaction Exploration & Date Range Filtering**: View and filter ledger records by customizable date ranges (`start_date`, `end_date`).
 - **Interactive Transaction Deletion**: Select individual transaction rows directly within the web table to safely delete transactions and their associated ledger entries.
+- **Non-Physical Accounts Valuation & Visual Analytics**: Interactive timeline charts powered by Chart.js displaying monthly cumulative balances and net change trajectories. Features dynamic multi-account filtering with native HTML5 Drag & Drop reordering and browser-level `localStorage` persistence ("Save Default" / "Clear Default").
 - **Visual Feedback & Notification Toasts**: Real-time Bootstrap toasts and flash alerts communicating domain validation errors (`ValueError`), success notices (including created transaction identifiers), and system messages.
+
+### Core Highlight: Virtual / Non-Physical Accounts & Envelope Budgeting
+
+One of the foremost motivations and most powerful capabilities of this entire accounting solution is its first-class support for **Non-Physical (Virtual / Imaginary) Accounts**.
+
+#### The Problem with Traditional Bank Accounts
+Traditional banking institutions hold your capital in a monolithic balance. When viewing a checking or savings account, you see a single lump sum, which obscures how much of that money is actually available to spend versus how much is earmarked for specific obligations, reserves, or long-term personal goals.
+
+#### The Solution: Zero-Friction Envelope Budgeting via Double-Entry Bookkeeping
+By defining accounts with `is_physical = False`, the system empowers you to segment money held inside a single physical bank account into independent, purposeful "virtual envelopes" without the friction, fees, or administrative overhead of opening multiple real-world bank accounts.
+
+Common practical use cases may include:
+- **Emergency Fund**: An uncompromised cushion earmarked for unexpected medical, household, or employment contingencies.
+- **Leisure & Entertainment Fund**: A ring-fenced budget for dining out, travel, concerts, and hobbies.
+- **Training & Education Reserve**: Dedicated capital for technical certifications, courses, books, and professional growth.
+- **Car Renovation / Vehicle Replacement Reserve**: Systematic monthly savings set aside for vehicle maintenance, repairs, or future replacement.
+
+#### Interactive Valuation & Multi-Account Analytics
+The web application provides a specialized **Non-Physical Accounts Valuation** route (`/accounting/non_physical_accounts`) featuring:
+- **Interactive Chart.js Line Visualization**: Visualizes month-by-month cumulative balances and net change trajectories across continuous chronological timelines (with automatic gap-month handling).
+- **Drag & Drop Multi-Account Filtering**: A responsive dual-list interface allowing users to drag and drop non-physical accounts between "Available" and "Selected" buckets to isolate exactly the funds they wish to analyze together.
+- **Browser-Persistent Defaults**: Save preferred account combinations via `localStorage` ("★ Save Default") so recurring financial review sessions open directly to your desired view.
 
 ### RESTful API Features
 
