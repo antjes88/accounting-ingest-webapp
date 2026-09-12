@@ -192,29 +192,24 @@ class PostgresRepository(AbstractRepository):
 
     def post_new_transaction(self, transaction: model.Transaction) -> int:
 
-        transaction_id = self.get_max_transaction_id() + 1
-
-        self.postgres_client.execute(
+        result = self.postgres_client.query(
             sql_queries.INSERT_NEW_TRANSACTION.format(
                 transaction_table=self.transactions_table,
                 ledger_entries_table=self.ledger_entries_table,
             ),
             params=(
-                transaction_id,
                 transaction.date,
                 transaction.description,
-                transaction_id,
                 transaction.get_debit_account_id(),
                 model.EntryType.DEBIT.id,
                 transaction.amount,
-                transaction_id,
                 transaction.get_credit_account_id(),
                 model.EntryType.CREDIT.id,
                 transaction.amount,
             ),
         )
 
-        return transaction_id
+        return result[0][0]
 
     def post_new_account(self, account: model.Account) -> None:
         account_id = self.get_max_account_id() + 1

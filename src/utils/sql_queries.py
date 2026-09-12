@@ -51,16 +51,21 @@ ORDER BY entry_type_id;
 
 
 INSERT_NEW_TRANSACTION = """
-INSERT INTO {transaction_table}
-(transaction_id, transaction_date, transaction_description)
-VALUES
-(%s, %s, %s);
-
-INSERT INTO {ledger_entries_table}
-(transaction_id, account_id, entry_type_id, amount)
-VALUES
-(%s, %s, %s, %s),
-(%s, %s, %s, %s)
+WITH inserted_transaction AS (
+    INSERT INTO {transaction_table}
+    (transaction_date, transaction_description)
+    VALUES
+    (%s, %s)
+    RETURNING transaction_id
+),
+inserted_entries AS (
+    INSERT INTO {ledger_entries_table}
+    (transaction_id, account_id, entry_type_id, amount)
+    SELECT transaction_id, %s, %s, %s FROM inserted_transaction
+    UNION ALL
+    SELECT transaction_id, %s, %s, %s FROM inserted_transaction
+)
+SELECT transaction_id FROM inserted_transaction;
 """
 
 SELECT_MAX_ID_ACCOUNTS = """
