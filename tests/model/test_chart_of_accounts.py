@@ -169,3 +169,28 @@ def test_chart_of_accounts_postable_and_parent_accounts_filtering():
 
     assert chart.postable_accounts == [child]
     assert chart.parent_accounts == [parent]
+
+
+def test_chart_of_accounts_non_physical_accounts_filtering():
+    """
+    GIVEN a ChartOfAccounts with physical, non-physical, and archived accounts
+    WHEN accessing non_physical_accounts
+    THEN it should contain only accounts where is_physical is False and is_archived is False.
+    """
+    physical_acc = Account(
+        id=1, account_type=AccountType.ASSET, name="Physical Cash", is_physical=True
+    )
+    non_phys_acc = Account(
+        id=2, account_type=AccountType.ASSET, name="Crypto Wallet", is_physical=False
+    )
+    archived_non_phys = Account(
+        id=3,
+        account_type=AccountType.ASSET,
+        name="Old Crypto",
+        is_physical=False,
+        is_archived=True,
+    )
+
+    chart = ChartOfAccounts([physical_acc, non_phys_acc, archived_non_phys])
+
+    assert chart.non_physical_accounts == [non_phys_acc]

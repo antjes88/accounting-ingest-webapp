@@ -3,6 +3,7 @@ from typing import Any
 from flask_wtf import FlaskForm
 from wtforms import (
     SelectField,
+    SelectMultipleField,
     FloatField,
     StringField,
     DateField,
@@ -20,6 +21,8 @@ from src.dto import (
     AccountTypeOptionDTO,
     TransactionFilterDTO,
     DeleteTransactionDTO,
+    NonPhysicalAccountOptionDTO,
+    NonPhysicalValuationFilterDTO,
 )
 
 
@@ -223,4 +226,56 @@ class DeleteTransactionForm(FlaskForm):
             raise ValueError("Transaction ID must be a valid integer.")
         return DeleteTransactionDTO(
             transaction_id=t_id,
+        )
+
+
+class NonPhysicalValuationFilterForm(FlaskForm):
+    account_ids = SelectMultipleField(
+        "Accounts",
+        choices=[],
+        validators=[optional()],
+        id="account_ids",
+    )
+    account_id = SelectField(
+        "Account",
+        choices=[],
+        validators=[optional()],
+        id="account_id",
+    )
+    submit = SubmitField("Apply Filter")
+
+    def __init__(
+        self,
+        account_options: list[NonPhysicalAccountOptionDTO],
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
+        super().__init__(*args, **kwargs)
+        self.account_id.choices = [
+            ("", "-- All Non-Physical Accounts --"),
+            *[(str(acc.id), acc.name) for acc in account_options],
+        ]
+        self.account_ids.choices = [(str(acc.id), acc.name) for acc in account_options]
+
+    def to_dto(self) -> NonPhysicalValuationFilterDTO:
+        parsed_account_ids: list[int] = []
+        if self.account_ids.data:
+            for item in self.account_ids.data:
+                try:
+                    parsed_account_ids.append(int(item))
+                except (ValueError, TypeError):
+                    pass
+
+        acc_id = None
+        if self.account_id.data:
+            try:
+                acc_id = int(self.account_id.data)
+            except (ValueError, TypeError):
+                acc_id = None
+
+        return NonPhysicalValuationFilterDTO(
+            account_ids=tuple(parsed_account_ids),
+            account_id=acc_id,
+            start_date=None,
+            end_date=None,
         )

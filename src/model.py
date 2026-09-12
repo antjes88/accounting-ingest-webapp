@@ -32,6 +32,13 @@ class AccountType(Enum):
                 return member
         raise ValueError(f"No AccountType with id {id_value}")
 
+    def calculate_balance_impact(
+        self, entry_type: "EntryType", amount: Decimal
+    ) -> Decimal:
+        if self in (AccountType.ASSET, AccountType.EXPENSE):
+            return amount if entry_type == EntryType.DEBIT else -amount
+        return amount if entry_type == EntryType.CREDIT else -amount
+
 
 class EntryType(Enum):
     CREDIT = (1, "Credit")
@@ -115,6 +122,9 @@ class Account:
     @property
     def is_father_account(self) -> bool:
         return self._father_account is None
+
+    def get_balance_impact(self, entry_type: EntryType, amount: Decimal) -> Decimal:
+        return self._account_type.calculate_balance_impact(entry_type, amount)
 
 
 @dataclass(frozen=True)
@@ -240,6 +250,12 @@ class ChartOfAccounts:
             acc
             for acc in self._accounts
             if acc.is_father_account and not acc.is_archived
+        ]
+
+    @property
+    def non_physical_accounts(self) -> List[Account]:
+        return [
+            acc for acc in self._accounts if not acc.is_physical and not acc.is_archived
         ]
 
     def get_account_by_id(self, account_id: int) -> Account:

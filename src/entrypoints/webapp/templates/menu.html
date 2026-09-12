@@ -3,7 +3,7 @@
 {% block content %}
 <!--menu this comment is to check that it is reached on test-->
 <div class="row justify-content-center">
-    <div class="col-lg-9 col-md-11">
+    <div class="col-lg-10 col-md-11">
         <div class="mb-4 text-start">
             <h2 class="h3 fw-bold mb-1">Double-Entry Accounting Ledger</h2>
             <p class="text-muted small mb-0">Select an action below to manage books, review history, or configure
@@ -12,41 +12,54 @@
 
         <div class="row g-4">
             <!-- Transactions / Ledger Card -->
-            <div class="col-md-4">
-                <a href="{{ url_for('accounting_pages.list_transactions') }}" class="action-card p-4">
+            <div class="col-md-6 col-lg-3">
+                <a href="{{ url_for('accounting_pages.list_transactions') }}" class="action-card p-4 h-100">
                     <div class="action-card-icon bg-primary text-white">
                         <span>📊</span>
                     </div>
                     <h5 class="fw-bold mb-2">View Transactions</h5>
                     <p class="text-muted small mb-3">Audit transaction records, filter by date ranges, and inspect entry
                         details.</p>
-                    <span class="btn btn-outline-primary btn-sm w-100">Open Ledger &rarr;</span>
+                    <span class="btn btn-outline-primary btn-sm w-100 mt-auto">Open Ledger &rarr;</span>
                 </a>
             </div>
 
             <!-- New Transaction Card -->
-            <div class="col-md-4">
-                <a href="{{ url_for('accounting_pages.new_transaction') }}" class="action-card p-4">
+            <div class="col-md-6 col-lg-3">
+                <a href="{{ url_for('accounting_pages.new_transaction') }}" class="action-card p-4 h-100">
                     <div class="action-card-icon bg-primary text-white">
                         <span>✍️</span>
                     </div>
                     <h5 class="fw-bold mb-2">New Transaction</h5>
                     <p class="text-muted small mb-3">Post a balanced double-entry transaction voucher between accounts.
                     </p>
-                    <span class="btn btn-outline-primary btn-sm w-100">Record Entry &rarr;</span>
+                    <span class="btn btn-outline-primary btn-sm w-100 mt-auto">Record Entry &rarr;</span>
                 </a>
             </div>
 
             <!-- New Account Card -->
-            <div class="col-md-4">
-                <a href="{{ url_for('accounting_pages.new_account') }}" class="action-card p-4">
+            <div class="col-md-6 col-lg-3">
+                <a href="{{ url_for('accounting_pages.new_account') }}" class="action-card p-4 h-100">
                     <div class="action-card-icon bg-primary text-white">
                         <span>🗂️</span>
                     </div>
                     <h5 class="fw-bold mb-2">New Account</h5>
                     <p class="text-muted small mb-3">Expand chart of accounts with hierarchical parent-child
                         relationships.</p>
-                    <span class="btn btn-outline-primary btn-sm w-100">Create Account &rarr;</span>
+                    <span class="btn btn-outline-primary btn-sm w-100 mt-auto">Create Account &rarr;</span>
+                </a>
+            </div>
+
+            <!-- Non-Physical Valuation Card -->
+            <div class="col-md-6 col-lg-3">
+                <a href="{{ url_for('accounting_pages.non_physical_accounts') }}" class="action-card p-4 h-100">
+                    <div class="action-card-icon bg-primary text-white">
+                        <span>📈</span>
+                    </div>
+                    <h5 class="fw-bold mb-2">Valuation</h5>
+                    <p class="text-muted small mb-3">Track month-by-month financial value and balance progression of
+                        non-physical accounts.</p>
+                    <span class="btn btn-outline-primary btn-sm w-100 mt-auto">View Valuation &rarr;</span>
                 </a>
             </div>
         </div>

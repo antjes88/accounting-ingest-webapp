@@ -367,3 +367,111 @@ h6 {
     font-weight: 500;
     border: none;
 }
+
+.tracking-wide {
+    letter-spacing: 0.05em;
+}
+
+.bg-surface {
+    background-color: var(--bg-surface);
+}
+
+/* ==========================================================================
+   Drag & Drop Account Filter
+   ========================================================================== */
+.dnd-filter-container {
+    background-color: var(--bg-canvas);
+    border-radius: var(--radius-md);
+    padding: 1rem;
+    border: 1px solid var(--border-subtle);
+}
+
+.dnd-bucket {
+    background-color: var(--bg-surface);
+    border: 2px dashed var(--border-subtle);
+    border-radius: var(--radius-md);
+    min-height: 110px;
+    padding: 0.75rem;
+    transition: all 0.2s ease;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-content: flex-start;
+}
+
+.dnd-bucket.drag-over {
+    border-color: var(--color-primary);
+    background-color: rgba(15, 23, 42, 0.03);
+    box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.08);
+}
+
+.dnd-bucket-included {
+    border-color: #cbd5e1;
+}
+
+.dnd-empty-hint {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    font-style: italic;
+    width: 100%;
+    text-align: center;
+    padding: 1.5rem 0.5rem;
+    user-select: none;
+    pointer-events: none;
+}
+
+.dnd-chip {
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    padding: 0.35rem 0.65rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    cursor: grab;
+    user-select: none;
+    box-shadow: var(--shadow-sm);
+    transition: all 0.15s ease;
+}
+
+.dnd-chip:hover {
+    box-shadow: var(--shadow-card);
+    border-color: var(--border-strong);
+    transform: translateY(-1px);
+}
+
+.dnd-chip:active {
+    cursor: grabbing;
+}
+
+.dnd-chip.dragging {
+    opacity: 0.4;
+    transform: scale(0.96);
+}
+
+.dnd-chip-handle {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    line-height: 1;
+    margin-right: 2px;
+}
+
+.dnd-chip-btn {
+    background: transparent;
+    border: none;
+    padding: 0 0.2rem;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    line-height: 1;
+    cursor: pointer;
+    border-radius: 3px;
+    transition: color 0.15s ease;
+}
+
+.dnd-chip-btn:hover {
+    color: var(--text-primary);
+    background-color: rgba(15, 23, 42, 0.08);
+}
