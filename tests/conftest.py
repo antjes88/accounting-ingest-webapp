@@ -45,8 +45,8 @@ def repo_with_data(
                (5, 4, 'Archived', true, true, 3);
         
         INSERT INTO accounting.transactions
-        (transaction_id, transaction_date, transaction_description)
-        VALUES (1, '2024-01-01', 'Test');
+        (transaction_date, transaction_description)
+        VALUES ('2024-01-01', 'Test');
 
         INSERT INTO accounting.ledger_entries
         (transaction_id, account_id, entry_type_id, amount)
