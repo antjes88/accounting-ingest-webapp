@@ -26,13 +26,13 @@ def test_create_transaction_success(
     transaction_date = dt.date(2024, 6, 15)
     amount = Decimal("250.50")
     description = "API Test transaction"
-    debit_account_id = 2  # Petty Cash
-    credit_account_id = 4  # Base Salary
+    debit_account = "Petty Cash"
+    credit_account = "Base Salary"
     payload = {
         "date": transaction_date.strftime("%Y-%m-%d"),
         "amount": str(amount),
-        "debit_account_id": debit_account_id,
-        "credit_account_id": credit_account_id,
+        "debit_account": debit_account,
+        "credit_account": credit_account,
         "description": description,
     }
 
@@ -56,8 +56,8 @@ def test_create_transaction_success(
         f"FROM {repo_with_data.ledger_entries_table} "
         f"WHERE transaction_id = {transaction_id} ORDER BY entry_type_id"
     ) == [
-        (transaction_id, credit_account_id, EntryType.CREDIT.id, amount),
-        (transaction_id, debit_account_id, EntryType.DEBIT.id, amount),
+        (transaction_id, 4, EntryType.CREDIT.id, amount),
+        (transaction_id, 2, EntryType.DEBIT.id, amount),
     ]
 
 
@@ -70,8 +70,8 @@ def test_create_transaction_unauthorized(api_client: FlaskClient) -> None:
     payload = {
         "date": "2024-06-15",
         "amount": "100.00",
-        "debit_account_id": 2,
-        "credit_account_id": 4,
+        "debit_account": "Petty Cash",
+        "credit_account": "Base Salary",
     }
 
     response = api_client.post(
@@ -89,14 +89,14 @@ def test_create_transaction_nonexistent_account(
 ) -> None:
     """
     GIVEN an authenticated API client
-    WHEN the client posts transaction data referencing an account ID that does not exist
+    WHEN the client posts transaction data referencing an account name that does not exist
     THEN the response status code should be 400 Bad Request with an error description.
     """
     payload = {
         "date": "2024-06-15",
         "amount": "100.00",
-        "debit_account_id": 9999,  # Nonexistent account
-        "credit_account_id": 4,
+        "debit_account": "Nonexistent Account",
+        "credit_account": "Base Salary",
         "description": "Invalid debit account test",
     }
 
@@ -108,7 +108,7 @@ def test_create_transaction_nonexistent_account(
     json_data = response.get_json()
 
     assert response.status_code == 400
-    assert "Debit account with ID 9999 not found." in json_data["message"]
+    assert "Debit account 'Nonexistent Account' not found." in json_data["message"]
 
 
 @pytest.mark.parametrize(
@@ -118,8 +118,8 @@ def test_create_transaction_nonexistent_account(
             {
                 "date": "2024-06-15",
                 "amount": "0.00",
-                "debit_account_id": 2,
-                "credit_account_id": 4,
+                "debit_account": "Petty Cash",
+                "credit_account": "Base Salary",
             },
             id="zero_amount",
         ),
@@ -127,8 +127,8 @@ def test_create_transaction_nonexistent_account(
             {
                 "date": "2024-06-15",
                 "amount": "-50.00",
-                "debit_account_id": 2,
-                "credit_account_id": 4,
+                "debit_account": "Petty Cash",
+                "credit_account": "Base Salary",
             },
             id="negative_amount",
         ),
@@ -136,8 +136,8 @@ def test_create_transaction_nonexistent_account(
             {
                 "date": "invalid-date",
                 "amount": "100.00",
-                "debit_account_id": 2,
-                "credit_account_id": 4,
+                "debit_account": "Petty Cash",
+                "credit_account": "Base Salary",
             },
             id="invalid_date_format",
         ),
@@ -145,33 +145,33 @@ def test_create_transaction_nonexistent_account(
             {
                 "date": "2024-06-15",
                 "amount": "100.00",
-                "debit_account_id": 0,
-                "credit_account_id": 4,
+                "debit_account": "",
+                "credit_account": "Base Salary",
             },
-            id="invalid_debit_account_id_zero",
+            id="empty_debit_account",
         ),
         pytest.param(
             {
                 "date": "2024-06-15",
                 "amount": "100.00",
-                "debit_account_id": 2,
-                "credit_account_id": -1,
+                "debit_account": "Petty Cash",
+                "credit_account": "",
             },
-            id="invalid_credit_account_id_negative",
+            id="empty_credit_account",
         ),
         pytest.param(
             {
                 "amount": "100.00",
-                "debit_account_id": 2,
-                "credit_account_id": 4,
+                "debit_account": "Petty Cash",
+                "credit_account": "Base Salary",
             },
             id="missing_date",
         ),
         pytest.param(
             {
                 "date": "2024-06-15",
-                "debit_account_id": 2,
-                "credit_account_id": 4,
+                "debit_account": "Petty Cash",
+                "credit_account": "Base Salary",
             },
             id="missing_amount",
         ),
@@ -179,17 +179,17 @@ def test_create_transaction_nonexistent_account(
             {
                 "date": "2024-06-15",
                 "amount": "100.00",
-                "credit_account_id": 4,
+                "credit_account": "Base Salary",
             },
-            id="missing_debit_account_id",
+            id="missing_debit_account",
         ),
         pytest.param(
             {
                 "date": "2024-06-15",
                 "amount": "100.00",
-                "debit_account_id": 2,
+                "debit_account": "Petty Cash",
             },
-            id="missing_credit_account_id",
+            id="missing_credit_account",
         ),
     ],
 )
@@ -225,8 +225,8 @@ def test_create_transaction_handles_unexpected_exception(
     payload = {
         "date": "2024-06-15",
         "amount": "100.00",
-        "debit_account_id": 2,
-        "credit_account_id": 4,
+        "debit_account": "Petty Cash",
+        "credit_account": "Base Salary",
     }
 
     with patch(
@@ -257,8 +257,8 @@ def test_create_transaction_schema_to_dto() -> None:
     data = {
         "date": dt.date(2024, 5, 20),
         "amount": Decimal("150.75"),
-        "debit_account_id": 2,
-        "credit_account_id": 4,
+        "debit_account": "Petty Cash",
+        "credit_account": "Base Salary",
         "description": "Direct to_dto conversion test",
     }
     dto = schema.to_dto(data)
@@ -266,8 +266,8 @@ def test_create_transaction_schema_to_dto() -> None:
     assert isinstance(dto, CreateTransactionDTO)
     assert dto.date == dt.date(2024, 5, 20)
     assert dto.amount == Decimal("150.75")
-    assert dto.debit_account_id == 2
-    assert dto.credit_account_id == 4
+    assert dto.debit_account == "Petty Cash"
+    assert dto.credit_account == "Base Salary"
     assert dto.description == "Direct to_dto conversion test"
 
 
@@ -286,15 +286,15 @@ def test_batch_create_transactions_success(
         {
             "date": "2024-06-16",
             "amount": "100.00",
-            "debit_account_id": 2,
-            "credit_account_id": 4,
+            "debit_account": "Petty Cash",
+            "credit_account": "Base Salary",
             "description": "Batch API Tx 1",
         },
         {
             "date": "2024-06-17",
             "amount": "200.00",
-            "debit_account_id": 2,
-            "credit_account_id": 4,
+            "debit_account": "Petty Cash",
+            "credit_account": "Base Salary",
             "description": "Batch API Tx 2",
         },
     ]
@@ -328,8 +328,8 @@ def test_batch_create_transactions_unauthorized(api_client: FlaskClient) -> None
         {
             "date": "2024-06-16",
             "amount": "100.00",
-            "debit_account_id": 2,
-            "credit_account_id": 4,
+            "debit_account": "Petty Cash",
+            "credit_account": "Base Salary",
         }
     ]
     response = api_client.post(
@@ -375,15 +375,15 @@ def test_batch_create_transactions_atomicity_on_nonexistent_account(
         {
             "date": "2024-06-16",
             "amount": "100.00",
-            "debit_account_id": 2,
-            "credit_account_id": 4,
+            "debit_account": "Petty Cash",
+            "credit_account": "Base Salary",
             "description": "Batch Valid Tx",
         },
         {
             "date": "2024-06-17",
             "amount": "200.00",
-            "debit_account_id": 2,
-            "credit_account_id": 9999,
+            "debit_account": "Petty Cash",
+            "credit_account": "Nonexistent Account",
             "description": "Batch Invalid Account Tx",
         },
     ]
@@ -397,7 +397,7 @@ def test_batch_create_transactions_atomicity_on_nonexistent_account(
     final_tx_count = len(repo_with_data.get_transactions())
 
     assert response.status_code == 400
-    assert "Credit account with ID 9999 not found." in json_data["message"]
+    assert "Credit account 'Nonexistent Account' not found." in json_data["message"]
     assert final_tx_count == initial_tx_count
 
 
@@ -414,8 +414,8 @@ def test_batch_create_transactions_validation_errors(
         {
             "date": "2024-06-16",
             "amount": "-50.00",
-            "debit_account_id": 2,
-            "credit_account_id": 4,
+            "debit_account": "Petty Cash",
+            "credit_account": "Base Salary",
             "description": "Invalid Amount Tx",
         }
     ]
@@ -442,8 +442,8 @@ def test_batch_create_transactions_handles_unexpected_exception(
         {
             "date": "2024-06-16",
             "amount": "100.00",
-            "debit_account_id": 2,
-            "credit_account_id": 4,
+            "debit_account": "Petty Cash",
+            "credit_account": "Base Salary",
             "description": "Valid Tx",
         }
     ]

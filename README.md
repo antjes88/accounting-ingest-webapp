@@ -58,8 +58,8 @@ The web application provides a specialized **Non-Physical Accounts Valuation** r
 
 ### Command Line Interface (CLI) Features
 
-- **File-Based Transaction Ingestion**: Ingest double-entry ledger transactions directly from JSON files using `create-transaction -fp <path>`.
-- **Consistent Schema Validation**: Validates JSON payloads against required fields (`date`, `amount`, `debit_account_id`, `credit_account_id`), ensuring data integrity and returning the assigned `transaction_id`.
+- **File-Based Transaction Ingestion**: Ingest double-entry ledger transactions directly from JSON files using `create-transaction -fp <path>` or `create-transactions -fp <path>`.
+- **Consistent Schema Validation**: Validates JSON payloads against required fields (`date`, `amount`, `debit_account`, `credit_account`), ensuring data integrity and returning the assigned `transaction_id`.
 - **Scriptable & Automation-Ready**: Designed for automation workflows, shell scripts, and batch processing without requiring a web browser.
 
 ### System & Architecture Features
@@ -277,8 +277,8 @@ Once running, the interactive Swagger UI and OpenAPI documentation is available 
   {
     "date": "2024-06-15",
     "amount": "250.50",
-    "debit_account_id": 2,
-    "credit_account_id": 4,
+    "debit_account": "Petty Cash",
+    "credit_account": "Base Salary",
     "description": "Office supplies"
   }
   ```
@@ -299,15 +299,15 @@ Once running, the interactive Swagger UI and OpenAPI documentation is available 
     {
       "date": "2024-06-15",
       "amount": "250.50",
-      "debit_account_id": 2,
-      "credit_account_id": 4,
+      "debit_account": "Petty Cash",
+      "credit_account": "Base Salary",
       "description": "Office supplies"
     },
     {
       "date": "2024-06-16",
       "amount": "80.00",
-      "debit_account_id": 2,
-      "credit_account_id": 4,
+      "debit_account": "Petty Cash",
+      "credit_account": "Base Salary",
       "description": "Travel expenses"
     }
   ]
@@ -339,8 +339,8 @@ The JSON file uses the same schema format as the REST API:
 {
   "date": "2024-06-15",
   "amount": "250.50",
-  "debit_account_id": 2,
-  "credit_account_id": 4,
+  "debit_account": "Petty Cash",
+  "credit_account": "Base Salary",
   "description": "Office supplies"
 }
 ```
@@ -365,15 +365,15 @@ The JSON file contains an array of transaction objects:
   {
     "date": "2024-06-15",
     "amount": "250.50",
-    "debit_account_id": 2,
-    "credit_account_id": 4,
+    "debit_account": "Petty Cash",
+    "credit_account": "Base Salary",
     "description": "Office supplies"
   },
   {
     "date": "2024-06-16",
     "amount": "80.00",
-    "debit_account_id": 2,
-    "credit_account_id": 4,
+    "debit_account": "Petty Cash",
+    "credit_account": "Base Salary",
     "description": "Travel expenses"
   }
 ]

@@ -70,9 +70,9 @@ def test_new_transaction_post(
         "/accounting/new_transaction",
         data={
             "type_debit": str(model.AccountType.ASSET.id),
-            "account_debit": "2",  # Petty Cash account ID
+            "account_debit": "Petty Cash",
             "type_credit": str(model.AccountType.REVENUE.id),
-            "account_credit": "4",  # Base Salary account ID
+            "account_credit": "Base Salary",
             "amount": amount,
             "description": description,
             "date": transaction_date.strftime("%Y-%m-%d"),
@@ -169,9 +169,9 @@ def test_new_transaction_post_handles_value_error(
             "/accounting/new_transaction",
             data={
                 "type_debit": str(model.AccountType.ASSET.id),
-                "account_debit": "2",
+                "account_debit": "Petty Cash",
                 "type_credit": str(model.AccountType.REVENUE.id),
-                "account_credit": "4",
+                "account_credit": "Base Salary",
                 "amount": "100.00",
                 "description": "Test failure",
                 "date": "2024-01-01",
@@ -200,9 +200,9 @@ def test_new_transaction_post_handles_unexpected_exception(
             "/accounting/new_transaction",
             data={
                 "type_debit": str(model.AccountType.ASSET.id),
-                "account_debit": "2",
+                "account_debit": "Petty Cash",
                 "type_credit": str(model.AccountType.REVENUE.id),
-                "account_credit": "4",
+                "account_credit": "Base Salary",
                 "amount": "100.00",
                 "description": "Test failure",
                 "date": "2024-01-01",
@@ -587,8 +587,8 @@ def test_non_physical_accounts_page_with_data(
         CreateTransactionDTO(
             date=dt.date(2024, 1, 15),
             amount=Decimal("250.00"),
-            debit_account_id=crypto.id,
-            credit_account_id=base_salary_account.id,  # type: ignore
+            debit_account=crypto.name,
+            credit_account=base_salary_account.name,
         ),
     )
 
@@ -774,8 +774,8 @@ def test_non_physical_accounts_page_filter_by_multiple_account_ids_query_params(
         CreateTransactionDTO(
             date=dt.date(2024, 3, 15),
             amount=Decimal("120.00"),
-            debit_account_id=alpha.id,
-            credit_account_id=salary.id,
+            debit_account=alpha.name,
+            credit_account=salary.name,
         ),
     )
     services.record_new_transaction(
@@ -783,8 +783,8 @@ def test_non_physical_accounts_page_filter_by_multiple_account_ids_query_params(
         CreateTransactionDTO(
             date=dt.date(2024, 3, 20),
             amount=Decimal("380.00"),
-            debit_account_id=beta.id,
-            credit_account_id=salary.id,
+            debit_account=beta.name,
+            credit_account=salary.name,
         ),
     )
 

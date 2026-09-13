@@ -30,8 +30,8 @@ def test_create_transaction_success(
     payload = {
         "date": "2024-06-15",
         "amount": "250.50",
-        "debit_account_id": 2,
-        "credit_account_id": 4,
+        "debit_account": "Petty Cash",
+        "credit_account": "Base Salary",
         "description": "CLI Test transaction",
     }
     json_file = tmp_path / "transaction.json"
@@ -108,7 +108,7 @@ def test_create_transaction_invalid_json(tmp_path: Path) -> None:
 
 @pytest.mark.parametrize(
     "missing_field",
-    ["date", "amount", "debit_account_id", "credit_account_id"],
+    ["date", "amount", "debit_account", "credit_account"],
 )
 def test_create_transaction_missing_required_fields(
     missing_field: str, tmp_path: Path
@@ -121,8 +121,8 @@ def test_create_transaction_missing_required_fields(
     payload = {
         "date": "2024-06-15",
         "amount": "100.00",
-        "debit_account_id": 2,
-        "credit_account_id": 4,
+        "debit_account": "Petty Cash",
+        "credit_account": "Base Salary",
     }
     del payload[missing_field]
 
@@ -143,8 +143,8 @@ def test_create_transaction_missing_required_fields(
             {
                 "date": "invalid-date",
                 "amount": "100.00",
-                "debit_account_id": 2,
-                "credit_account_id": 4,
+                "debit_account": "Petty Cash",
+                "credit_account": "Base Salary",
             },
             "Invalid date format",
         ),
@@ -152,8 +152,8 @@ def test_create_transaction_missing_required_fields(
             {
                 "date": "2024-06-15",
                 "amount": "-50.00",
-                "debit_account_id": 2,
-                "credit_account_id": 4,
+                "debit_account": "Petty Cash",
+                "credit_account": "Base Salary",
             },
             "amount must be greater than 0",
         ),
@@ -161,8 +161,8 @@ def test_create_transaction_missing_required_fields(
             {
                 "date": "2024-06-15",
                 "amount": "not-a-number",
-                "debit_account_id": 2,
-                "credit_account_id": 4,
+                "debit_account": "Petty Cash",
+                "credit_account": "Base Salary",
             },
             "must be a valid numeric decimal",
         ),
@@ -170,35 +170,44 @@ def test_create_transaction_missing_required_fields(
             {
                 "date": "2024-06-15",
                 "amount": "100.00",
-                "debit_account_id": 0,
-                "credit_account_id": 4,
+                "debit_account": "",
+                "credit_account": "Base Salary",
             },
-            "Invalid debit_account_id",
+            "Invalid debit_account",
         ),
         (
             {
                 "date": "2024-06-15",
                 "amount": "100.00",
-                "debit_account_id": 2,
-                "credit_account_id": -1,
+                "debit_account": 123,
+                "credit_account": "Base Salary",
             },
-            "Invalid credit_account_id",
+            "Invalid debit_account",
         ),
         (
             {
                 "date": "2024-06-15",
                 "amount": "100.00",
-                "debit_account_id": "abc",
-                "credit_account_id": 4,
+                "debit_account": "Petty Cash",
+                "credit_account": "   ",
             },
-            "Account IDs must be integers",
+            "Invalid credit_account",
         ),
         (
             {
                 "date": "2024-06-15",
                 "amount": "100.00",
-                "debit_account_id": 2,
-                "credit_account_id": 4,
+                "debit_account": "Petty Cash",
+                "credit_account": 456,
+            },
+            "Invalid credit_account",
+        ),
+        (
+            {
+                "date": "2024-06-15",
+                "amount": "100.00",
+                "debit_account": "Petty Cash",
+                "credit_account": "Base Salary",
                 "description": 12345,
             },
             "Description must be a string",
@@ -227,15 +236,15 @@ def test_create_transaction_nonexistent_account(
     repo_with_data: PostgresRepository, tmp_path: Path
 ) -> None:
     """
-    GIVEN a JSON file referencing a non-existent account ID
+    GIVEN a JSON file referencing a non-existent account name
     WHEN the create-transaction CLI command is executed
     THEN the exit code should be non-zero and domain validation error displayed.
     """
     payload = {
         "date": "2024-06-15",
         "amount": "100.00",
-        "debit_account_id": 9999,
-        "credit_account_id": 4,
+        "debit_account": "Nonexistent Debit",
+        "credit_account": "Base Salary",
     }
     json_file = tmp_path / "nonexistent_account.json"
     json_file.write_text(json.dumps(payload), encoding="utf-8")
@@ -248,7 +257,7 @@ def test_create_transaction_nonexistent_account(
         result = runner.invoke(cli, ["create-transaction", "-fp", str(json_file)])
 
     assert result.exit_code != 0
-    assert "Debit account with ID 9999 not found" in result.output
+    assert "Debit account 'Nonexistent Debit' not found" in result.output
 
 
 def test_create_transaction_unexpected_exception(
@@ -262,8 +271,8 @@ def test_create_transaction_unexpected_exception(
     payload = {
         "date": "2024-06-15",
         "amount": "100.00",
-        "debit_account_id": 2,
-        "credit_account_id": 4,
+        "debit_account": "Petty Cash",
+        "credit_account": "Base Salary",
     }
     json_file = tmp_path / "trans.json"
     json_file.write_text(json.dumps(payload), encoding="utf-8")
@@ -293,8 +302,8 @@ def test_load_transaction_dto_from_json_direct(tmp_path: Path) -> None:
     payload = {
         "date": "2024-05-20",
         "amount": "150.75",
-        "debit_account_id": 2,
-        "credit_account_id": 4,
+        "debit_account": "Petty Cash",
+        "credit_account": "Base Salary",
         "description": "Direct DTO loader test",
     }
     json_file = tmp_path / "valid.json"
@@ -305,8 +314,8 @@ def test_load_transaction_dto_from_json_direct(tmp_path: Path) -> None:
     assert isinstance(dto, CreateTransactionDTO)
     assert dto.date == date(2024, 5, 20)
     assert dto.amount == Decimal("150.75")
-    assert dto.debit_account_id == 2
-    assert dto.credit_account_id == 4
+    assert dto.debit_account == "Petty Cash"
+    assert dto.credit_account == "Base Salary"
     assert dto.description == "Direct DTO loader test"
 
 
@@ -336,15 +345,15 @@ def test_create_transactions_success(
         {
             "date": "2024-06-16",
             "amount": "100.00",
-            "debit_account_id": 2,
-            "credit_account_id": 4,
+            "debit_account": "Petty Cash",
+            "credit_account": "Base Salary",
             "description": "CLI Batch Tx 1",
         },
         {
             "date": "2024-06-17",
             "amount": "200.00",
-            "debit_account_id": 2,
-            "credit_account_id": 4,
+            "debit_account": "Petty Cash",
+            "credit_account": "Base Salary",
             "description": "CLI Batch Tx 2",
         },
     ]
@@ -461,15 +470,15 @@ def test_create_transactions_validation_error_in_item(
         {
             "date": "2024-06-16",
             "amount": "100.00",
-            "debit_account_id": 2,
-            "credit_account_id": 4,
+            "debit_account": "Petty Cash",
+            "credit_account": "Base Salary",
             "description": "Valid Tx in batch",
         },
         {
             "date": "2024-06-17",
             "amount": "-50.00",
-            "debit_account_id": 2,
-            "credit_account_id": 4,
+            "debit_account": "Petty Cash",
+            "credit_account": "Base Salary",
             "description": "Invalid amount Tx",
         },
     ]
@@ -502,15 +511,15 @@ def test_create_transactions_nonexistent_account(
         {
             "date": "2024-06-16",
             "amount": "100.00",
-            "debit_account_id": 2,
-            "credit_account_id": 4,
+            "debit_account": "Petty Cash",
+            "credit_account": "Base Salary",
             "description": "Valid Tx",
         },
         {
             "date": "2024-06-17",
             "amount": "100.00",
-            "debit_account_id": 2,
-            "credit_account_id": 9999,
+            "debit_account": "Petty Cash",
+            "credit_account": "Nonexistent Account",
             "description": "Invalid Account Tx",
         },
     ]
@@ -526,7 +535,7 @@ def test_create_transactions_nonexistent_account(
     final_tx_count = len(repo_with_data.get_transactions())
 
     assert result.exit_code != 0
-    assert "Credit account with ID 9999 not found" in result.output
+    assert "Credit account 'Nonexistent Account' not found" in result.output
     assert final_tx_count == initial_tx_count
 
 
@@ -542,8 +551,8 @@ def test_create_transactions_unexpected_exception(
         {
             "date": "2024-06-16",
             "amount": "100.00",
-            "debit_account_id": 2,
-            "credit_account_id": 4,
+            "debit_account": "Petty Cash",
+            "credit_account": "Base Salary",
         }
     ]
     json_file = tmp_path / "batch.json"
@@ -576,15 +585,15 @@ def test_load_batch_transaction_dto_from_json_direct(tmp_path: Path) -> None:
         {
             "date": "2024-05-20",
             "amount": "150.75",
-            "debit_account_id": 2,
-            "credit_account_id": 4,
+            "debit_account": "Petty Cash",
+            "credit_account": "Base Salary",
             "description": "Batch item 1",
         },
         {
             "date": "2024-05-21",
             "amount": "250.00",
-            "debit_account_id": 2,
-            "credit_account_id": 4,
+            "debit_account": "Petty Cash",
+            "credit_account": "Base Salary",
             "description": "Batch item 2",
         },
     ]
@@ -596,7 +605,11 @@ def test_load_batch_transaction_dto_from_json_direct(tmp_path: Path) -> None:
     assert isinstance(batch_dto, BatchCreateTransactionDTO)
     assert len(batch_dto.transactions) == 2
     assert batch_dto.transactions[0].amount == Decimal("150.75")
+    assert batch_dto.transactions[0].debit_account == "Petty Cash"
+    assert batch_dto.transactions[0].credit_account == "Base Salary"
     assert batch_dto.transactions[1].amount == Decimal("250.00")
+    assert batch_dto.transactions[1].debit_account == "Petty Cash"
+    assert batch_dto.transactions[1].credit_account == "Base Salary"
 
 
 def test_validate_transaction_dict_non_dict() -> None:
