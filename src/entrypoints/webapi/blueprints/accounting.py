@@ -45,15 +45,15 @@ class CreateTransactionSchema(Schema):
         validate=validate.Range(min=Decimal("0.01")),
         metadata={"description": "Amount of the transaction (must be greater than 0)"},
     )
-    debit_account_id = fields.Integer(
+    debit_account = fields.String(
         required=True,
-        validate=validate.Range(min=1),
-        metadata={"description": "Unique identifier of debit account"},
+        validate=validate.Length(min=1),
+        metadata={"description": "Name of the debit account"},
     )
-    credit_account_id = fields.Integer(
+    credit_account = fields.String(
         required=True,
-        validate=validate.Range(min=1),
-        metadata={"description": "Unique identifier of credit account"},
+        validate=validate.Length(min=1),
+        metadata={"description": "Name of the credit account"},
     )
     description = fields.String(
         load_default=None,
@@ -65,8 +65,8 @@ class CreateTransactionSchema(Schema):
         return CreateTransactionDTO(
             date=data["date"],
             amount=data["amount"],
-            debit_account_id=data["debit_account_id"],
-            credit_account_id=data["credit_account_id"],
+            debit_account=data["debit_account"],
+            credit_account=data["credit_account"],
             description=data.get("description"),
         )
 

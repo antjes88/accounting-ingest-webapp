@@ -79,7 +79,7 @@ class NewTransactionForm(FlaskForm):
                 ("", "-- Select an Account --"),
                 *(
                     (
-                        str(account.id),
+                        account.name,
                         account.name,
                         {"data-type": str(account.account_type_id)},
                     )
@@ -109,8 +109,8 @@ class NewTransactionForm(FlaskForm):
         return CreateTransactionDTO(
             date=self.date.data,  # type: ignore
             amount=Decimal(self.amount.data),  # type: ignore
-            debit_account_id=int(self.account_debit.data),
-            credit_account_id=int(self.account_credit.data),
+            debit_account=self.account_debit.data,
+            credit_account=self.account_credit.data,
             description=self.description.data,
         )
 

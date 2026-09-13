@@ -30,7 +30,7 @@ def validate_transaction_dict(data: dict[str, Any]) -> CreateTransactionDTO:
     if not isinstance(data, dict):
         raise ValueError("Invalid transaction format: element must be an object.")
 
-    required_fields = ["date", "amount", "debit_account_id", "credit_account_id"]
+    required_fields = ["date", "amount", "debit_account", "credit_account"]
     for field in required_fields:
         if field not in data or data[field] is None:
             raise ValueError(f"Missing required field: '{field}'.")
@@ -52,17 +52,13 @@ def validate_transaction_dict(data: dict[str, Any]) -> CreateTransactionDTO:
     if amount <= Decimal("0"):
         raise ValueError(f"Invalid amount '{amount}': amount must be greater than 0.")
 
-    try:
-        debit_account_id = int(data["debit_account_id"])
-        credit_account_id = int(data["credit_account_id"])
-    except (ValueError, TypeError) as err:
-        raise ValueError("Account IDs must be integers.") from err
+    debit_account = data["debit_account"]
+    if not isinstance(debit_account, str) or not debit_account.strip():
+        raise ValueError("Invalid debit_account: must be a non-empty string.")
 
-    if debit_account_id <= 0:
-        raise ValueError(f"Invalid debit_account_id: {debit_account_id}")
-
-    if credit_account_id <= 0:
-        raise ValueError(f"Invalid credit_account_id: {credit_account_id}")
+    credit_account = data["credit_account"]
+    if not isinstance(credit_account, str) or not credit_account.strip():
+        raise ValueError("Invalid credit_account: must be a non-empty string.")
 
     description = data.get("description")
     if description is not None and not isinstance(description, str):
@@ -71,8 +67,8 @@ def validate_transaction_dict(data: dict[str, Any]) -> CreateTransactionDTO:
     return CreateTransactionDTO(
         date=transaction_date,
         amount=amount,
-        debit_account_id=debit_account_id,
-        credit_account_id=credit_account_id,
+        debit_account=debit_account.strip(),
+        credit_account=credit_account.strip(),
         description=description,
     )
 

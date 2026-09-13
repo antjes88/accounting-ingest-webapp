@@ -53,8 +53,8 @@ def test_record_new_transaction(repo_with_data: PostgresRepository):
             date=transaction_date,
             description=description,
             amount=amount,
-            debit_account_id=petty_cash_account.id,  # type: ignore
-            credit_account_id=base_salary_account.id,  # type: ignore
+            debit_account=petty_cash_account.name,
+            credit_account=base_salary_account.name,
         ),
     )
 
@@ -95,15 +95,15 @@ def test_record_new_transactions_success(repo_with_data: PostgresRepository):
                 date=date(2024, 7, 1),
                 description="Batch Service Tx 1",
                 amount=Decimal("50.00"),
-                debit_account_id=petty_cash_account.id,  # type: ignore
-                credit_account_id=base_salary_account.id,  # type: ignore
+                debit_account=petty_cash_account.name,
+                credit_account=base_salary_account.name,
             ),
             CreateTransactionDTO(
                 date=date(2024, 7, 2),
                 description="Batch Service Tx 2",
                 amount=Decimal("75.00"),
-                debit_account_id=petty_cash_account.id,  # type: ignore
-                credit_account_id=base_salary_account.id,  # type: ignore
+                debit_account=petty_cash_account.name,
+                credit_account=base_salary_account.name,
             ),
         )
     )
@@ -127,13 +127,15 @@ def test_record_new_transactions_raises_value_error_when_debit_account_not_found
                 date=date(2024, 7, 1),
                 description="Batch Service Tx 1",
                 amount=Decimal("50.00"),
-                debit_account_id=9999,
-                credit_account_id=base_salary_account.id,  # type: ignore
+                debit_account="Nonexistent Debit",
+                credit_account=base_salary_account.name,
             ),
         )
     )
 
-    with pytest.raises(ValueError, match="Debit account with ID 9999 not found."):
+    with pytest.raises(
+        ValueError, match="Debit account 'Nonexistent Debit' not found."
+    ):
         record_new_transactions(repo_with_data, batch_dto)
 
 
@@ -151,13 +153,15 @@ def test_record_new_transactions_raises_value_error_when_credit_account_not_foun
                 date=date(2024, 7, 1),
                 description="Batch Service Tx 1",
                 amount=Decimal("50.00"),
-                debit_account_id=petty_cash_account.id,  # type: ignore
-                credit_account_id=9999,
+                debit_account=petty_cash_account.name,
+                credit_account="Nonexistent Credit",
             ),
         )
     )
 
-    with pytest.raises(ValueError, match="Credit account with ID 9999 not found."):
+    with pytest.raises(
+        ValueError, match="Credit account 'Nonexistent Credit' not found."
+    ):
         record_new_transactions(repo_with_data, batch_dto)
 
 
@@ -176,20 +180,22 @@ def test_record_new_transactions_atomicity_on_validation_failure(
                 date=date(2024, 7, 1),
                 description="Valid Tx",
                 amount=Decimal("50.00"),
-                debit_account_id=petty_cash_account.id,  # type: ignore
-                credit_account_id=base_salary_account.id,  # type: ignore
+                debit_account=petty_cash_account.name,
+                credit_account=base_salary_account.name,
             ),
             CreateTransactionDTO(
                 date=date(2024, 7, 2),
                 description="Invalid Tx",
                 amount=Decimal("75.00"),
-                debit_account_id=petty_cash_account.id,  # type: ignore
-                credit_account_id=9999,
+                debit_account=petty_cash_account.name,
+                credit_account="Nonexistent Credit",
             ),
         )
     )
 
-    with pytest.raises(ValueError, match="Credit account with ID 9999 not found."):
+    with pytest.raises(
+        ValueError, match="Credit account 'Nonexistent Credit' not found."
+    ):
         record_new_transactions(repo_with_data, batch_dto)
 
     final_tx_count = len(repo_with_data.get_transactions())
@@ -333,21 +339,21 @@ def test_record_new_transaction_raises_value_error_when_debit_account_not_found(
 ):
     """
     GIVEN a PostgresRepository with existing accounts and a CreateTransactionDTO
-    with a non-existent debit account ID
+    with a non-existent debit account name
     WHEN record_new_transaction service is called
     THEN a ValueError should be raised indicating that the debit account was not found.
     """
-    non_existent_id = 9999
+    non_existent_account = "Nonexistent Debit"
     dto = CreateTransactionDTO(
         date=date(2024, 1, 1),
         description="Invalid debit account transaction",
         amount=Decimal("100.00"),
-        debit_account_id=non_existent_id,
-        credit_account_id=base_salary_account.id,  # type: ignore
+        debit_account=non_existent_account,
+        credit_account=base_salary_account.name,
     )
 
     with pytest.raises(
-        ValueError, match=f"Debit account with ID {non_existent_id} not found."
+        ValueError, match=f"Debit account '{non_existent_account}' not found."
     ):
         record_new_transaction(repo_with_data, dto)
 
@@ -357,21 +363,21 @@ def test_record_new_transaction_raises_value_error_when_credit_account_not_found
 ):
     """
     GIVEN a PostgresRepository with existing accounts and
-    a CreateTransactionDTO with a non-existent credit account ID
+    a CreateTransactionDTO with a non-existent credit account name
     WHEN record_new_transaction service is called
     THEN a ValueError should be raised indicating that the credit account was not found.
     """
-    non_existent_id = 9999
+    non_existent_account = "Nonexistent Credit"
     dto = CreateTransactionDTO(
         date=date(2024, 1, 1),
         description="Invalid credit account transaction",
         amount=Decimal("100.00"),
-        debit_account_id=petty_cash_account.id,  # type: ignore
-        credit_account_id=non_existent_id,
+        debit_account=petty_cash_account.name,
+        credit_account=non_existent_account,
     )
 
     with pytest.raises(
-        ValueError, match=f"Credit account with ID {non_existent_id} not found."
+        ValueError, match=f"Credit account '{non_existent_account}' not found."
     ):
         record_new_transaction(repo_with_data, dto)
 
@@ -482,8 +488,8 @@ def test_get_non_physical_accounts_valuation_with_accounts_but_no_activity(
             date=date(2024, 1, 15),
             amount=Decimal("100.00"),
             description="Physical transfer",
-            debit_account_id=petty_cash_account.id,  # type: ignore
-            credit_account_id=base_salary_account.id,  # type: ignore
+            debit_account=petty_cash_account.name,
+            credit_account=base_salary_account.name,
         ),
     )
 
@@ -524,8 +530,8 @@ def test_get_non_physical_accounts_valuation_with_transactions(
         CreateTransactionDTO(
             date=date(2024, 1, 15),
             amount=Decimal("100.00"),
-            debit_account_id=crypto_acc.id,
-            credit_account_id=base_salary_account.id,  # type: ignore
+            debit_account=crypto_acc.name,
+            credit_account=base_salary_account.name,
             description="Buy crypto Jan",
         ),
     )
@@ -534,8 +540,8 @@ def test_get_non_physical_accounts_valuation_with_transactions(
         CreateTransactionDTO(
             date=date(2024, 3, 10),
             amount=Decimal("50.00"),
-            debit_account_id=crypto_acc.id,
-            credit_account_id=base_salary_account.id,  # type: ignore
+            debit_account=crypto_acc.name,
+            credit_account=base_salary_account.name,
             description="Buy crypto Mar",
         ),
     )
@@ -600,8 +606,8 @@ def test_get_non_physical_accounts_valuation_filter_by_account_and_date(
         CreateTransactionDTO(
             date=date(2024, 1, 15),
             amount=Decimal("100.00"),
-            debit_account_id=w1.id,
-            credit_account_id=base_salary_account.id,  # type: ignore
+            debit_account=w1.name,
+            credit_account=base_salary_account.name,
         ),
     )
     record_new_transaction(
@@ -609,8 +615,8 @@ def test_get_non_physical_accounts_valuation_filter_by_account_and_date(
         CreateTransactionDTO(
             date=date(2024, 2, 10),
             amount=Decimal("200.00"),
-            debit_account_id=w2.id,
-            credit_account_id=base_salary_account.id,  # type: ignore
+            debit_account=w2.name,
+            credit_account=base_salary_account.name,
         ),
     )
 
@@ -703,8 +709,8 @@ def test_get_non_physical_accounts_valuation_filter_by_multiple_account_ids(
         CreateTransactionDTO(
             date=date(2024, 1, 10),
             amount=Decimal("150.00"),
-            debit_account_id=ta.id,
-            credit_account_id=base_salary_account.id,  # type: ignore
+            debit_account=ta.name,
+            credit_account=base_salary_account.name,
         ),
     )
     record_new_transaction(
@@ -712,8 +718,8 @@ def test_get_non_physical_accounts_valuation_filter_by_multiple_account_ids(
         CreateTransactionDTO(
             date=date(2024, 1, 15),
             amount=Decimal("250.00"),
-            debit_account_id=tb.id,
-            credit_account_id=base_salary_account.id,  # type: ignore
+            debit_account=tb.name,
+            credit_account=base_salary_account.name,
         ),
     )
     record_new_transaction(
@@ -721,8 +727,8 @@ def test_get_non_physical_accounts_valuation_filter_by_multiple_account_ids(
         CreateTransactionDTO(
             date=date(2024, 1, 20),
             amount=Decimal("500.00"),
-            debit_account_id=tc.id,
-            credit_account_id=base_salary_account.id,  # type: ignore
+            debit_account=tc.name,
+            credit_account=base_salary_account.name,
         ),
     )
 

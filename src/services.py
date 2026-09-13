@@ -37,18 +37,16 @@ def record_new_transactions(
     transactions: list[model.Transaction] = []
 
     for transaction_dto in batch_dto.transactions:
-        try:
-            debit_account = chart.get_account_by_id(transaction_dto.debit_account_id)
-        except ValueError:
+        debit_account = chart.get_account_by_name(transaction_dto.debit_account)
+        if debit_account is None:
             raise ValueError(
-                f"Debit account with ID {transaction_dto.debit_account_id} not found."
+                f"Debit account '{transaction_dto.debit_account}' not found."
             )
 
-        try:
-            credit_account = chart.get_account_by_id(transaction_dto.credit_account_id)
-        except ValueError:
+        credit_account = chart.get_account_by_name(transaction_dto.credit_account)
+        if credit_account is None:
             raise ValueError(
-                f"Credit account with ID {transaction_dto.credit_account_id} not found."
+                f"Credit account '{transaction_dto.credit_account}' not found."
             )
 
         transaction = model.Transaction(

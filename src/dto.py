@@ -8,8 +8,8 @@ from typing import Optional
 class CreateTransactionDTO:
     date: date
     amount: Decimal
-    debit_account_id: int
-    credit_account_id: int
+    debit_account: str
+    credit_account: str
     description: Optional[str] = None
 
 
