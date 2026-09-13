@@ -5,7 +5,7 @@ from decimal import Decimal, InvalidOperation
 from typing import Any
 import click
 
-from src.dto import CreateTransactionDTO
+from src.dto import CreateTransactionDTO, BatchCreateTransactionDTO
 from src.repository import PostgresRepository, AbstractRepository
 from src.utils.postgresql_client import PostgresGCPClient
 from src.utils.logs import default_module_logger
@@ -26,12 +26,9 @@ def _get_repository() -> AbstractRepository:
     )
 
 
-def load_transaction_dto_from_json(file_path: str) -> CreateTransactionDTO:
-    with open(file_path, "r", encoding="utf-8") as f:
-        data: dict[str, Any] = json.load(f)
-
+def validate_transaction_dict(data: dict[str, Any]) -> CreateTransactionDTO:
     if not isinstance(data, dict):
-        raise ValueError("Invalid JSON format: root element must be an object.")
+        raise ValueError("Invalid transaction format: element must be an object.")
 
     required_fields = ["date", "amount", "debit_account_id", "credit_account_id"]
     for field in required_fields:
@@ -80,6 +77,33 @@ def load_transaction_dto_from_json(file_path: str) -> CreateTransactionDTO:
     )
 
 
+def load_transaction_dto_from_json(file_path: str) -> CreateTransactionDTO:
+    with open(file_path, "r", encoding="utf-8") as f:
+        data: dict[str, Any] = json.load(f)
+
+    if not isinstance(data, dict):
+        raise ValueError("Invalid JSON format: root element must be an object.")
+
+    return validate_transaction_dict(data)
+
+
+def load_batch_transaction_dto_from_json(
+    file_path: str,
+) -> BatchCreateTransactionDTO:
+    with open(file_path, "r", encoding="utf-8") as f:
+        data: Any = json.load(f)
+
+    if not isinstance(data, list):
+        raise ValueError("Invalid JSON format: root element must be a list.")
+
+    if not data:
+        raise ValueError("At least one transaction must be provided.")
+
+    transactions = tuple(validate_transaction_dict(item) for item in data)
+
+    return BatchCreateTransactionDTO(transactions=transactions)
+
+
 @click.command(name="create-transaction")
 @click.option(
     "file_path",
@@ -118,5 +142,48 @@ def create_transaction(file_path: str) -> None:
         logger.exception("Unexpected error recording transaction via CLI")
         click.echo(
             "An unexpected error occurred while recording the transaction.", err=True
+        )
+        raise click.Abort()
+
+
+@click.command(name="create-transactions")
+@click.option(
+    "file_path",
+    "-fp",
+    type=click.Path(exists=True, dir_okay=False, readable=True),
+    required=True,
+    help="Path of the JSON file containing a list of transactions",
+)
+def create_transactions(file_path: str) -> None:
+    """Create and record multiple new transactions from a JSON file atomically."""
+    repo = _get_repository()
+
+    try:
+        batch_dto = load_batch_transaction_dto_from_json(file_path)
+        transaction_ids = services.record_new_transactions(
+            repo=repo,
+            batch_dto=batch_dto,
+        )
+        ids_str = ", ".join(str(tid) for tid in transaction_ids)
+        msg = f"Transactions recorded successfully! Transaction IDs: {ids_str}"
+        logger.info(msg)
+        click.echo(msg)
+
+    except json.JSONDecodeError as err:
+        error_msg = f"Error parsing JSON file: {err}"
+        logger.warning(error_msg)
+        click.echo(f"Error: {error_msg}", err=True)
+        raise click.Abort()
+
+    except ValueError as err:
+        error_msg = f"Validation error recording transactions: {err}"
+        logger.warning(error_msg)
+        click.echo(f"Error: {err}", err=True)
+        raise click.Abort()
+
+    except Exception:
+        logger.exception("Unexpected error recording transactions via CLI")
+        click.echo(
+            "An unexpected error occurred while recording the transactions.", err=True
         )
         raise click.Abort()

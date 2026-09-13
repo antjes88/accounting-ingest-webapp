@@ -325,7 +325,9 @@ Once running, the interactive Swagger UI and OpenAPI documentation is available 
 
 The repository provides a Command Line Interface (CLI) powered by Click for programmatic transaction recording via JSON files.
 
-To execute a transaction creation command:
+##### 1. Single Transaction (`create-transaction`)
+
+To execute a single transaction creation command:
 
 ```bash
 python -m src.entrypoints.cli create-transaction -fp /path/to/transaction.json
@@ -346,6 +348,40 @@ The JSON file uses the same schema format as the REST API:
 Upon successful creation, the CLI outputs:
 ```
 Transaction recorded successfully! Transaction ID: <id>
+```
+
+##### 2. Batch Transactions (`create-transactions`)
+
+To record multiple transactions atomically in a single batch:
+
+```bash
+python -m src.entrypoints.cli create-transactions -fp /path/to/transactions.json
+```
+
+The JSON file contains an array of transaction objects:
+
+```json
+[
+  {
+    "date": "2024-06-15",
+    "amount": "250.50",
+    "debit_account_id": 2,
+    "credit_account_id": 4,
+    "description": "Office supplies"
+  },
+  {
+    "date": "2024-06-16",
+    "amount": "80.00",
+    "debit_account_id": 2,
+    "credit_account_id": 4,
+    "description": "Travel expenses"
+  }
+]
+```
+
+Upon successful creation, the CLI outputs:
+```
+Transactions recorded successfully! Transaction IDs: <id1>, <id2>
 ```
 
 

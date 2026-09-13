@@ -9,6 +9,7 @@ It is a web-based personal double-entry bookkeeping accounting application built
 - Always ask for approval before implementing changes. Do not commit changes.
 - Python environment is located at `/usr/app/venv/bin/python`
 - For testing use: `python -m pytest` followed by any parameter you required for your purpose.
+- To enable connection with the test database: `./.devcontainer/launch_cloud_sql_proxy.sh`; in case you need to restart, use: `pkill -f cloud-sql-proxy`.
 
 ## 2. Core Architecture Rules:
 
