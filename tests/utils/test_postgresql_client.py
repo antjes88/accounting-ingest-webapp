@@ -223,6 +223,55 @@ def test_close_connection_without_active_pool():
     mock_conn.close.assert_called_once()
 
 
+def test_query_many_empty_params_list(db_conn: PostgresGCPClient):
+    """
+    GIVEN a PostgreSQL client connection
+    WHEN query_many is called with an empty params_list
+    THEN it should return an empty list without executing queries.
+    """
+    assert db_conn.query_many("SELECT 1;", []) == []
+
+
+def test_query_many_success(execute_create_table: PostgresGCPClient):
+    """
+    GIVEN a PostgreSQL client connected to a database with a test table
+    WHEN query_many is called with multiple insert statements returning data
+    THEN all statements are committed and all results are returned.
+    """
+    statement = "INSERT INTO test.simple (Id, Name, Activated, Date) VALUES (%s, %s, %s, %s) RETURNING Id;"
+    params_list = [
+        (3, "BMW", True, dt.date(2021, 3, 3)),
+        (4, "Audi", True, dt.date(2021, 4, 4)),
+    ]
+    results = execute_create_table.query_many(statement, params_list)
+    rows = execute_create_table.query(
+        "SELECT Id, Name FROM test.simple WHERE Id IN (3, 4) ORDER BY Id ASC;"
+    )
+
+    assert results == [(3,), (4,)]
+    assert rows == [(3, "BMW"), (4, "Audi")]
+
+
+def test_query_many_rollback_on_error(
+    execute_create_table: PostgresGCPClient,
+):
+    """
+    GIVEN a PostgreSQL client connected to a database with a test table
+    WHEN query_many fails on one of the statements in the batch
+    THEN an exception is raised and all statements in the batch are rolled back.
+    """
+    statement = "INSERT INTO test.simple (Id, Name, Activated, Date) VALUES (%s, %s, %s, %s) RETURNING Id;"
+    params_list = [
+        (5, "Volvo", True, dt.date(2021, 5, 5)),
+        ("invalid_id", "Porsche", True, dt.date(2021, 6, 6)),
+    ]
+    with pytest.raises(Exception):
+        execute_create_table.query_many(statement, params_list)
+
+    rows = execute_create_table.query("SELECT Id FROM test.simple WHERE Id = 5;")
+    assert rows == []
+
+
 def test_close_all_pools_with_active_pools(db_conn: PostgresGCPClient):
     """
     GIVEN active connection pools in PostgresSQLClient._pools

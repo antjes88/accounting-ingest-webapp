@@ -144,6 +144,68 @@ def test_record_new_transaction(repo_with_data: PostgresRepository):
     ]
 
 
+def test_post_new_transactions_empty_list(repo_with_data: PostgresRepository):
+    """
+    GIVEN a PostgresRepository
+    WHEN post_new_transactions is called with an empty list
+    THEN it should return an empty list without database modifications.
+    """
+    assert repo_with_data.post_new_transactions([]) == []
+
+
+def test_post_new_transactions_multiple(repo_with_data: PostgresRepository):
+    """
+    GIVEN a PostgresRepository with existing data and multiple valid Transaction objects
+    WHEN the post_new_transactions method is called with the list of Transaction objects
+    THEN all transactions should be recorded in the database and their IDs returned in order.
+    """
+    tx1 = model.Transaction(
+        id=None,
+        date=date(2024, 6, 2),
+        description="Batch Tx 1",
+        lines=[
+            model.TransactionLine(
+                account=petty_cash_account,
+                amount=Decimal("150.00"),
+                entry_type=model.EntryType.DEBIT,
+            ),
+            model.TransactionLine(
+                account=base_salary_account,
+                amount=Decimal("150.00"),
+                entry_type=model.EntryType.CREDIT,
+            ),
+        ],
+    )
+    tx2 = model.Transaction(
+        id=None,
+        date=date(2024, 6, 3),
+        description="Batch Tx 2",
+        lines=[
+            model.TransactionLine(
+                account=petty_cash_account,
+                amount=Decimal("250.00"),
+                entry_type=model.EntryType.DEBIT,
+            ),
+            model.TransactionLine(
+                account=base_salary_account,
+                amount=Decimal("250.00"),
+                entry_type=model.EntryType.CREDIT,
+            ),
+        ],
+    )
+
+    ids = repo_with_data.post_new_transactions([tx1, tx2])
+
+    res = repo_with_data.postgres_client.query(
+        f"SELECT transaction_id, transaction_description FROM {repo_with_data.transactions_table} "
+        f"WHERE transaction_id IN ({ids[0]}, {ids[1]}) ORDER BY transaction_id ASC"
+    )
+
+    assert len(ids) == 2
+    assert ids[1] > ids[0]
+    assert res == [(ids[0], "Batch Tx 1"), (ids[1], "Batch Tx 2")]
+
+
 @pytest.mark.parametrize(
     "new_account_name, new_account_type, is_physical, is_archived, father_account",
     [

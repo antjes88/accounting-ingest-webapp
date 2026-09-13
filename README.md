@@ -268,6 +268,7 @@ Once running, the interactive Swagger UI and OpenAPI documentation is available 
 |---|---|---|---|---|
 | `POST` | `/api/v1/auth/login` | Authenticate user credentials and receive JWT access token | None | `200 OK`, `401 Unauthorized`, `422 Unprocessable Entity` |
 | `POST` | `/api/v1/transactions` | Create and record a new double-entry transaction | Bearer JWT | `201 Created`, `400 Bad Request`, `401 Unauthorized`, `422 Unprocessable Entity`, `500 Internal Server Error` |
+| `POST` | `/api/v1/transactions/batch` | Create and record multiple double-entry transactions atomically | Bearer JWT | `201 Created`, `400 Bad Request`, `401 Unauthorized`, `422 Unprocessable Entity`, `500 Internal Server Error` |
 
 **Example: Ingesting a Transaction**
 
@@ -287,6 +288,36 @@ Once running, the interactive Swagger UI and OpenAPI documentation is available 
   {
     "transaction_id": 12,
     "message": "Transaction recorded successfully"
+  }
+  ```
+
+**Example: Batch Ingesting Transactions Atomically**
+
+- **Request** (`POST /api/v1/transactions/batch`):
+  ```json
+  [
+    {
+      "date": "2024-06-15",
+      "amount": "250.50",
+      "debit_account_id": 2,
+      "credit_account_id": 4,
+      "description": "Office supplies"
+    },
+    {
+      "date": "2024-06-16",
+      "amount": "80.00",
+      "debit_account_id": 2,
+      "credit_account_id": 4,
+      "description": "Travel expenses"
+    }
+  ]
+  ```
+
+- **Response** (`201 Created`):
+  ```json
+  {
+    "transaction_ids": [12, 13],
+    "message": "Transactions recorded successfully"
   }
   ```
 

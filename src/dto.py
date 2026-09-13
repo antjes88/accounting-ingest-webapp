@@ -14,6 +14,11 @@ class CreateTransactionDTO:
 
 
 @dataclass(frozen=True)
+class BatchCreateTransactionDTO:
+    transactions: tuple[CreateTransactionDTO, ...]
+
+
+@dataclass(frozen=True)
 class CreateAccountDTO:
     account_type_id: int
     name: str

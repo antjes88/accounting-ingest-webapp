@@ -32,6 +32,13 @@ class AbstractRepository(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    def post_new_transactions(
+        self,
+        transactions: list[model.Transaction],
+    ) -> list[int]:
+        raise NotImplementedError
+
+    @abstractmethod
     def post_new_account(
         self,
         account: model.Account,
@@ -191,25 +198,36 @@ class PostgresRepository(AbstractRepository):
         )[0][0]
 
     def post_new_transaction(self, transaction: model.Transaction) -> int:
+        return self.post_new_transactions([transaction])[0]
 
-        result = self.postgres_client.query(
-            sql_queries.INSERT_NEW_TRANSACTION.format(
-                transaction_table=self.transactions_table,
-                ledger_entries_table=self.ledger_entries_table,
-            ),
-            params=(
-                transaction.date,
-                transaction.description,
-                transaction.get_debit_account_id(),
+    def post_new_transactions(
+        self,
+        transactions: list[model.Transaction],
+    ) -> list[int]:
+        if not transactions:
+            return []
+
+        params_list = [
+            (
+                t.date,
+                t.description,
+                t.get_debit_account_id(),
                 model.EntryType.DEBIT.id,
-                transaction.amount,
-                transaction.get_credit_account_id(),
+                t.amount,
+                t.get_credit_account_id(),
                 model.EntryType.CREDIT.id,
-                transaction.amount,
-            ),
+                t.amount,
+            )
+            for t in transactions
+        ]
+
+        statement = sql_queries.INSERT_NEW_TRANSACTION.format(
+            transaction_table=self.transactions_table,
+            ledger_entries_table=self.ledger_entries_table,
         )
 
-        return result[0][0]
+        results = self.postgres_client.query_many(statement, params_list)
+        return [row[0] for row in results]
 
     def post_new_account(self, account: model.Account) -> None:
         account_id = self.get_max_account_id() + 1

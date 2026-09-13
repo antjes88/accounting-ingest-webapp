@@ -121,6 +121,30 @@ class PostgresSQLClient(ABC):
 
         return data
 
+    def query_many(
+        self, statement: str, params_list: List[Tuple[Any, ...]]
+    ) -> List[Tuple[Any, ...]]:
+        if not params_list:
+            return []
+
+        conn, cursor, error = None, None, None
+        results: List[Tuple[Any, ...]] = []
+        try:
+            cursor, conn = self.create_connection()
+            for params in params_list:
+                cursor.execute(statement, params)
+                data = cursor.fetchall()
+                results.extend(data)
+            conn.commit()
+        except psycopg2.Error as e:
+            error = e
+        finally:
+            self.close_connection(cursor, conn)
+            if error:
+                raise Exception(error)
+
+        return results
+
     def close(self) -> None:
         with self._pool_lock:
             pool = self._pools.pop(self._pool_key, None)

@@ -12,6 +12,7 @@ from src.utils.helpers import (
 )
 from src.dto import (
     CreateTransactionDTO,
+    BatchCreateTransactionDTO,
     CreateAccountDTO,
     PostableAccountOptionDTO,
     ParentAccountOptionDTO,
@@ -25,45 +26,60 @@ from src.dto import (
 )
 
 
+def record_new_transactions(
+    repo: repository.AbstractRepository,
+    batch_dto: BatchCreateTransactionDTO,
+) -> list[int]:
+    if not batch_dto.transactions:
+        return []
+
+    chart = repo.get_chart_of_accounts()
+    transactions: list[model.Transaction] = []
+
+    for transaction_dto in batch_dto.transactions:
+        try:
+            debit_account = chart.get_account_by_id(transaction_dto.debit_account_id)
+        except ValueError:
+            raise ValueError(
+                f"Debit account with ID {transaction_dto.debit_account_id} not found."
+            )
+
+        try:
+            credit_account = chart.get_account_by_id(transaction_dto.credit_account_id)
+        except ValueError:
+            raise ValueError(
+                f"Credit account with ID {transaction_dto.credit_account_id} not found."
+            )
+
+        transaction = model.Transaction(
+            id=None,
+            date=transaction_dto.date,
+            description=transaction_dto.description,
+            lines=[
+                model.TransactionLine(
+                    account=debit_account,
+                    amount=transaction_dto.amount,
+                    entry_type=model.EntryType.DEBIT,
+                ),
+                model.TransactionLine(
+                    account=credit_account,
+                    amount=transaction_dto.amount,
+                    entry_type=model.EntryType.CREDIT,
+                ),
+            ],
+        )
+        transactions.append(transaction)
+
+    return repo.post_new_transactions(transactions)
+
+
 def record_new_transaction(
     repo: repository.AbstractRepository,
     transaction_dto: CreateTransactionDTO,
 ) -> int:
-    chart = repo.get_chart_of_accounts()
-
-    try:
-        debit_account = chart.get_account_by_id(transaction_dto.debit_account_id)
-    except ValueError:
-        raise ValueError(
-            f"Debit account with ID {transaction_dto.debit_account_id} not found."
-        )
-
-    try:
-        credit_account = chart.get_account_by_id(transaction_dto.credit_account_id)
-    except ValueError:
-        raise ValueError(
-            f"Credit account with ID {transaction_dto.credit_account_id} not found."
-        )
-
-    transaction = model.Transaction(
-        id=None,
-        date=transaction_dto.date,
-        description=transaction_dto.description,
-        lines=[
-            model.TransactionLine(
-                account=debit_account,
-                amount=transaction_dto.amount,
-                entry_type=model.EntryType.DEBIT,
-            ),
-            model.TransactionLine(
-                account=credit_account,
-                amount=transaction_dto.amount,
-                entry_type=model.EntryType.CREDIT,
-            ),
-        ],
-    )
-
-    return repo.post_new_transaction(transaction)
+    return record_new_transactions(
+        repo, BatchCreateTransactionDTO(transactions=(transaction_dto,))
+    )[0]
 
 
 def record_new_account(
