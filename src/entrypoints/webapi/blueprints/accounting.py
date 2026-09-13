@@ -6,7 +6,7 @@ from flask_smorest import Blueprint, abort
 from marshmallow import Schema, fields, validate
 from flask_jwt_extended import jwt_required
 
-from src.dto import CreateTransactionDTO
+from src.dto import CreateTransactionDTO, BatchCreateTransactionDTO
 from src.repository import PostgresRepository, AbstractRepository
 from src.utils.postgresql_client import PostgresGCPClient
 from src.utils.logs import default_module_logger
@@ -71,9 +71,6 @@ class CreateTransactionSchema(Schema):
         )
 
 
-CreateTransaction = CreateTransactionSchema
-
-
 class TransactionCreatedResponseSchema(Schema):
     transaction_id = fields.Integer(
         required=True,
@@ -82,6 +79,21 @@ class TransactionCreatedResponseSchema(Schema):
     message = fields.String(
         required=True,
         dump_default="Transaction recorded successfully",
+        metadata={"description": "Operation confirmation message"},
+    )
+
+
+class BatchTransactionsCreatedResponseSchema(Schema):
+    transaction_ids = fields.List(
+        fields.Integer(),
+        required=True,
+        metadata={
+            "description": "List of unique identifiers of the created transactions"
+        },
+    )
+    message = fields.String(
+        required=True,
+        dump_default="Transactions recorded successfully",
         metadata={"description": "Operation confirmation message"},
     )
 
@@ -117,4 +129,43 @@ class TransactionCollection(views.MethodView):
             abort(
                 500,
                 message="An unexpected error occurred while recording the transaction.",
+            )
+
+
+@accounting.route("/batch")
+class TransactionBatchCollection(views.MethodView):
+
+    @jwt_required()
+    @accounting.arguments(CreateTransactionSchema(many=True))
+    @accounting.response(201, BatchTransactionsCreatedResponseSchema)
+    def post(self, transactions_data: list[dict[str, Any]]) -> dict[str, Any]:
+        """Create and record multiple new transactions atomically"""
+        if not transactions_data:
+            abort(400, message="At least one transaction must be provided.")
+
+        schema = CreateTransactionSchema()
+        dto = BatchCreateTransactionDTO(
+            transactions=tuple(schema.to_dto(item) for item in transactions_data)
+        )
+        repo = _get_repository()
+
+        try:
+            transaction_ids = services.record_new_transactions(
+                repo=repo,
+                batch_dto=dto,
+            )
+            return {
+                "transaction_ids": transaction_ids,
+                "message": "Transactions recorded successfully",
+            }
+
+        except ValueError as err:
+            logger.warning(f"Validation error recording transactions batch: {err}")
+            abort(400, message=str(err))
+
+        except Exception:
+            logger.exception("Unexpected error recording transactions batch")
+            abort(
+                500,
+                message="An unexpected error occurred while recording the transactions.",
             )

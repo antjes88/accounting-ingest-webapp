@@ -6,6 +6,7 @@ from typing import Optional
 from src.repository import PostgresRepository
 from src.services import (
     record_new_transaction,
+    record_new_transactions,
     record_new_account,
     get_postable_account_options,
     get_parent_account_options,
@@ -17,6 +18,7 @@ from src.services import (
 )
 from src.dto import (
     CreateTransactionDTO,
+    BatchCreateTransactionDTO,
     CreateAccountDTO,
     PostableAccountOptionDTO,
     ParentAccountOptionDTO,
@@ -68,6 +70,130 @@ def test_record_new_transaction(repo_with_data: PostgresRepository):
         (transaction_id, base_salary_account.id, 1, amount),
         (transaction_id, petty_cash_account.id, 2, amount),
     ]
+
+
+def test_record_new_transactions_empty_list(repo_with_data: PostgresRepository):
+    """
+    GIVEN a PostgresRepository and an empty BatchCreateTransactionDTO
+    WHEN record_new_transactions is called
+    THEN it should return an empty list without making repository calls.
+    """
+    batch_dto = BatchCreateTransactionDTO(transactions=())
+
+    assert record_new_transactions(repo_with_data, batch_dto) == []
+
+
+def test_record_new_transactions_success(repo_with_data: PostgresRepository):
+    """
+    GIVEN a PostgresRepository and a BatchCreateTransactionDTO with multiple valid transactions
+    WHEN record_new_transactions is called
+    THEN all transactions should be recorded in the database and their IDs returned.
+    """
+    batch_dto = BatchCreateTransactionDTO(
+        transactions=(
+            CreateTransactionDTO(
+                date=date(2024, 7, 1),
+                description="Batch Service Tx 1",
+                amount=Decimal("50.00"),
+                debit_account_id=petty_cash_account.id,  # type: ignore
+                credit_account_id=base_salary_account.id,  # type: ignore
+            ),
+            CreateTransactionDTO(
+                date=date(2024, 7, 2),
+                description="Batch Service Tx 2",
+                amount=Decimal("75.00"),
+                debit_account_id=petty_cash_account.id,  # type: ignore
+                credit_account_id=base_salary_account.id,  # type: ignore
+            ),
+        )
+    )
+    ids = record_new_transactions(repo_with_data, batch_dto)
+
+    assert len(ids) == 2
+    assert ids[1] > ids[0]
+
+
+def test_record_new_transactions_raises_value_error_when_debit_account_not_found(
+    repo_with_data: PostgresRepository,
+):
+    """
+    GIVEN a PostgresRepository and a BatchCreateTransactionDTO with an invalid debit account
+    WHEN record_new_transactions is called
+    THEN a ValueError is raised and no transactions are committed.
+    """
+    batch_dto = BatchCreateTransactionDTO(
+        transactions=(
+            CreateTransactionDTO(
+                date=date(2024, 7, 1),
+                description="Batch Service Tx 1",
+                amount=Decimal("50.00"),
+                debit_account_id=9999,
+                credit_account_id=base_salary_account.id,  # type: ignore
+            ),
+        )
+    )
+
+    with pytest.raises(ValueError, match="Debit account with ID 9999 not found."):
+        record_new_transactions(repo_with_data, batch_dto)
+
+
+def test_record_new_transactions_raises_value_error_when_credit_account_not_found(
+    repo_with_data: PostgresRepository,
+):
+    """
+    GIVEN a PostgresRepository and a BatchCreateTransactionDTO with an invalid credit account
+    WHEN record_new_transactions is called
+    THEN a ValueError is raised and no transactions are committed.
+    """
+    batch_dto = BatchCreateTransactionDTO(
+        transactions=(
+            CreateTransactionDTO(
+                date=date(2024, 7, 1),
+                description="Batch Service Tx 1",
+                amount=Decimal("50.00"),
+                debit_account_id=petty_cash_account.id,  # type: ignore
+                credit_account_id=9999,
+            ),
+        )
+    )
+
+    with pytest.raises(ValueError, match="Credit account with ID 9999 not found."):
+        record_new_transactions(repo_with_data, batch_dto)
+
+
+def test_record_new_transactions_atomicity_on_validation_failure(
+    repo_with_data: PostgresRepository,
+):
+    """
+    GIVEN a PostgresRepository and a BatchCreateTransactionDTO where the second transaction has an invalid account
+    WHEN record_new_transactions is called
+    THEN a ValueError is raised and neither transaction is committed to the database.
+    """
+    initial_tx_count = len(repo_with_data.get_transactions())
+    batch_dto = BatchCreateTransactionDTO(
+        transactions=(
+            CreateTransactionDTO(
+                date=date(2024, 7, 1),
+                description="Valid Tx",
+                amount=Decimal("50.00"),
+                debit_account_id=petty_cash_account.id,  # type: ignore
+                credit_account_id=base_salary_account.id,  # type: ignore
+            ),
+            CreateTransactionDTO(
+                date=date(2024, 7, 2),
+                description="Invalid Tx",
+                amount=Decimal("75.00"),
+                debit_account_id=petty_cash_account.id,  # type: ignore
+                credit_account_id=9999,
+            ),
+        )
+    )
+
+    with pytest.raises(ValueError, match="Credit account with ID 9999 not found."):
+        record_new_transactions(repo_with_data, batch_dto)
+
+    final_tx_count = len(repo_with_data.get_transactions())
+    assert final_tx_count == initial_tx_count
 
 
 @pytest.mark.parametrize(
