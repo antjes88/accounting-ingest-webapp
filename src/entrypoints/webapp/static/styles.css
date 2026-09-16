@@ -306,6 +306,34 @@ h6 {
     border-bottom: 1px solid var(--border-subtle);
 }
 
+.ledger-table thead th.sortable-header {
+    cursor: pointer;
+    user-select: none;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.ledger-table thead th.sortable-header:hover {
+    background-color: #f1f5f9;
+    color: var(--text-primary);
+}
+
+.ledger-table thead th.sortable-header .sort-icon {
+    display: inline-block;
+    margin-left: 0.35rem;
+    font-size: 0.75rem;
+    opacity: 0.45;
+    transition: opacity 0.15s ease, color 0.15s ease;
+}
+
+.ledger-table thead th.sortable-header:hover .sort-icon {
+    opacity: 0.8;
+}
+
+.ledger-table thead th.sortable-header.sorted .sort-icon {
+    opacity: 1;
+    color: var(--color-primary);
+}
+
 .ledger-table tbody td {
     padding: 0.85rem 1rem;
     border-bottom: 1px solid var(--border-subtle);
