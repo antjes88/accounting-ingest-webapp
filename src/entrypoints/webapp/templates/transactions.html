@@ -56,32 +56,53 @@
             <table class="ledger-table align-middle mb-0">
                 <thead>
                     <tr>
-                        <th scope="col" class="text-center" style="width: 5%;">#</th>
-                        <th scope="col" style="width: 12%;">Date</th>
-                        <th scope="col">Description</th>
-                        <th scope="col" style="width: 22%;">Debit Account</th>
-                        <th scope="col" style="width: 22%;">Credit Account</th>
-                        <th scope="col" class="text-end" style="width: 15%;">Amount</th>
+                        <th scope="col" class="text-center sortable-header" data-column="id" data-type="number"
+                            style="width: 6%;" role="button" tabindex="0" title="Sort by Transaction ID">
+                            <span>#</span><span class="sort-icon">↕</span>
+                        </th>
+                        <th scope="col" class="sortable-header" data-column="date" data-type="date" style="width: 13%;"
+                            role="button" tabindex="0" title="Sort by Date">
+                            <span>Date</span><span class="sort-icon">↕</span>
+                        </th>
+                        <th scope="col" class="sortable-header" data-column="description" data-type="text" role="button"
+                            tabindex="0" title="Sort by Description">
+                            <span>Description</span><span class="sort-icon">↕</span>
+                        </th>
+                        <th scope="col" class="sortable-header" data-column="debit" data-type="text" style="width: 22%;"
+                            role="button" tabindex="0" title="Sort by Debit Account">
+                            <span>Debit Account</span><span class="sort-icon">↕</span>
+                        </th>
+                        <th scope="col" class="sortable-header" data-column="credit" data-type="text"
+                            style="width: 22%;" role="button" tabindex="0" title="Sort by Credit Account">
+                            <span>Credit Account</span><span class="sort-icon">↕</span>
+                        </th>
+                        <th scope="col" class="text-end sortable-header" data-column="amount" data-type="number"
+                            style="width: 15%;" role="button" tabindex="0" title="Sort by Amount">
+                            <span>Amount</span><span class="sort-icon">↕</span>
+                        </th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="ledger-table-body">
                     {% for t in transactions %}
                     <tr class="transaction-row" data-transaction-id="{{ t.id }}" style="cursor: pointer;">
-                        <td class="text-center text-muted font-mono-num fw-bold small">{{ t.id }}</td>
-                        <td class="font-mono-num small text-secondary">{{ t.date.strftime('%Y-%m-%d') if t.date else ''
-                            }}</td>
-                        <td class="fw-medium text-dark">{{ t.description or '-' }}</td>
-                        <td>
+                        <td class="text-center text-muted font-mono-num fw-bold small" data-sort-value="{{ t.id }}">{{
+                            t.id }}</td>
+                        <td class="font-mono-num small text-secondary"
+                            data-sort-value="{{ t.date.strftime('%Y-%m-%d') if t.date else '' }}">{{
+                            t.date.strftime('%Y-%m-%d') if t.date else '' }}</td>
+                        <td class="fw-medium text-dark" data-sort-value="{{ (t.description or '') | lower }}">{{
+                            t.description or '-' }}</td>
+                        <td data-sort-value="{{ t.debit_account_name | lower }}">
                             <span class="badge-debit">
                                 {{ t.debit_account_name }}
                             </span>
                         </td>
-                        <td>
+                        <td data-sort-value="{{ t.credit_account_name | lower }}">
                             <span class="badge-credit">
                                 {{ t.credit_account_name }}
                             </span>
                         </td>
-                        <td class="text-end font-mono-num fw-bold text-dark">
+                        <td class="text-end font-mono-num fw-bold text-dark" data-sort-value="{{ t.amount }}">
                             £{{ "{:,.2f}".format(t.amount) }}
                         </td>
                     </tr>
@@ -102,13 +123,17 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        const rows = document.querySelectorAll('.transaction-row');
+        const tbody = document.getElementById('ledger-table-body');
         const deleteBtn = document.getElementById('delete-btn');
         const transactionIdInput = document.getElementById('selected-transaction-id') || document.querySelector('#delete-transaction-form input[name="transaction_id"]');
         let selectedRow = null;
 
-        rows.forEach(function (row) {
-            row.addEventListener('click', function () {
+        if (tbody) {
+            // Row selection for deletion using event delegation
+            tbody.addEventListener('click', function (e) {
+                const row = e.target.closest('.transaction-row');
+                if (!row) return;
+
                 if (selectedRow === row) {
                     row.classList.remove('table-active');
                     selectedRow = null;
@@ -125,7 +150,66 @@
                     if (deleteBtn) deleteBtn.classList.remove('d-none');
                 }
             });
-        });
+
+            // Column header sorting
+            const headers = document.querySelectorAll('.sortable-header');
+            let currentSort = { colIndex: null, direction: 'asc' };
+
+            function sortTable(header) {
+                const colIndex = Array.from(header.parentElement.children).indexOf(header);
+                const colType = header.getAttribute('data-type') || 'text';
+                const newDirection = (currentSort.colIndex === colIndex && currentSort.direction === 'asc') ? 'desc' : 'asc';
+                currentSort = { colIndex: colIndex, direction: newDirection };
+
+                const rows = Array.from(tbody.querySelectorAll('.transaction-row'));
+                rows.sort(function (rowA, rowB) {
+                    const cellA = rowA.children[colIndex];
+                    const cellB = rowB.children[colIndex];
+                    const valA = cellA ? (cellA.getAttribute('data-sort-value') !== null ? cellA.getAttribute('data-sort-value') : cellA.textContent.trim()) : '';
+                    const valB = cellB ? (cellB.getAttribute('data-sort-value') !== null ? cellB.getAttribute('data-sort-value') : cellB.textContent.trim()) : '';
+
+                    let comparison = 0;
+                    if (colType === 'number') {
+                        const numA = parseFloat(valA) || 0;
+                        const numB = parseFloat(valB) || 0;
+                        comparison = numA - numB;
+                    } else if (colType === 'date') {
+                        comparison = valA.localeCompare(valB);
+                    } else {
+                        comparison = valA.localeCompare(valB, undefined, { numeric: true, sensitivity: 'base' });
+                    }
+                    return newDirection === 'asc' ? comparison : -comparison;
+                });
+
+                rows.forEach(function (row) {
+                    tbody.appendChild(row);
+                });
+
+                headers.forEach(function (h) {
+                    h.classList.remove('sorted');
+                    const icon = h.querySelector('.sort-icon');
+                    if (icon) icon.textContent = '↕';
+                });
+
+                header.classList.add('sorted');
+                const activeIcon = header.querySelector('.sort-icon');
+                if (activeIcon) {
+                    activeIcon.textContent = newDirection === 'asc' ? '▲' : '▼';
+                }
+            }
+
+            headers.forEach(function (header) {
+                header.addEventListener('click', function () {
+                    sortTable(header);
+                });
+                header.addEventListener('keydown', function (e) {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        sortTable(header);
+                    }
+                });
+            });
+        }
     });
 </script>
 {% endblock %}

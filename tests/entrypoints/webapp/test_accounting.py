@@ -294,6 +294,32 @@ def test_transactions_page_is_reached(
     )
 
 
+def test_transactions_page_renders_sortable_headers_and_data_attributes(
+    client_logged_in: FlaskClient, repo_with_data: PostgresRepository
+):
+    """
+    GIVEN a logged-in client and a repository with transactions
+    WHEN the client requests the transactions page with a date filter matching existing transactions
+    THEN the response status should be 200, each table column header should have sortable attributes,
+    and row cells should contain data-sort-value attributes for client-side sorting.
+    """
+    response = client_logged_in.get(
+        "/accounting/transactions?start_date=2024-01-01&end_date=2024-01-31",
+        follow_redirects=True,
+    )
+
+    assert response.status_code == 200
+    assert b"sortable-header" in response.data
+    assert b'data-column="id"' in response.data
+    assert b'data-column="date"' in response.data
+    assert b'data-column="description"' in response.data
+    assert b'data-column="debit"' in response.data
+    assert b'data-column="credit"' in response.data
+    assert b'data-column="amount"' in response.data
+    assert b"data-sort-value" in response.data
+    assert b"sort-icon" in response.data
+
+
 def test_transactions_page_empty_state(
     client_logged_in: FlaskClient, repo_with_data: PostgresRepository
 ):
