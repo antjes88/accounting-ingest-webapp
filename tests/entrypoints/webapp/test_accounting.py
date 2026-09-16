@@ -299,12 +299,12 @@ def test_transactions_page_renders_sortable_headers_and_data_attributes(
 ):
     """
     GIVEN a logged-in client and a repository with transactions
-    WHEN the client requests the transactions page
+    WHEN the client requests the transactions page with a date filter matching existing transactions
     THEN the response status should be 200, each table column header should have sortable attributes,
     and row cells should contain data-sort-value attributes for client-side sorting.
     """
     response = client_logged_in.get(
-        "/accounting/transactions",
+        "/accounting/transactions?start_date=2024-01-01&end_date=2024-01-31",
         follow_redirects=True,
     )
 
