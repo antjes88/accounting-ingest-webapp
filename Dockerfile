@@ -21,7 +21,7 @@ RUN rm terraform_1.6.6_linux_amd64.zip
 FROM terraform AS npx
 # Install npx
 RUN apt-get install -y curl gnupg \
-    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && curl -fsSL https://deb.nodesource.com/setup_24.x | bash - \
     && apt-get install -y nodejs \
     && rm -rf /var/lib/apt/lists/*
 
